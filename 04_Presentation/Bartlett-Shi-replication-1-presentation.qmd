@@ -1,0 +1,64 @@
+---
+title: "Replication paper 1: Presentation"
+subtitle: "PPOL 6801: Text as Data: Computational Linguistics"
+author: "Wendy Shi & Maria Bartlett"
+date: "February 11, 2025"
+format:
+  revealjs: 
+    theme: bootstrap.scss
+editor: visual
+---
+
+# Overview 
+
+```{r}
+
+# clear global environment
+rm(list = ls())
+
+# set seed
+set.seed(12345)
+
+# load packages
+library(tidyverse)
+
+# set relative paths
+#root <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/03_ProblemSets/01_PS1"
+
+# define kable styling options
+kable_style <- function(df) {
+  
+  df %>%
+  kbl(full_width = T, 
+      align = "l",
+      booktabs = T) %>%
+  kable_styling(latex_options = c("repeat_header","scale_down","HOLD_position")) 
+}
+
+```
+
+## Introduction
+
+-   Text
+
+## Methods
+
+-   Text
+
+## Results
+
+-   Text
+
+<!-- -->
+
+-   Text
+
+<!-- -->
+
+## Autopsy
+
+Text
+
+## Extension
+
+Text
