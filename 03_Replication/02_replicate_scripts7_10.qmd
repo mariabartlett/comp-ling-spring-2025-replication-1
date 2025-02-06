@@ -1,0 +1,367 @@
+---
+title: ""
+subtitle: "PPOL 6801: Text as Data: Computational Linguistics"
+author: "Wendy Shi & Maria Bartlett"
+date: "`r Sys.Date()`"
+format: html
+theme: litera
+toc: TRUE
+toc-location: left
+toc-depth: 7
+embed-resources: TRUE
+linkcolor: "black"
+editor: visual
+fontsize: 12pt
+css: bootstrap.css
+page-layout: full
+---
+
+### Set-up
+
+```{r}
+#| message: FALSE
+#| warning: FALSE
+#| code-fold: TRUE
+
+# clear global environment
+rm(list = ls())
+
+# set seed
+set.seed(12345)
+
+# load packages
+library(tidyverse)
+library(spacyr)
+library(sophistication)  
+library(BradleyTerry2)
+library(modelsummary)
+library(quanteda)
+library(quanteda.textstats)
+
+# set processing/display options
+options(mc.cores = parallel::detectCores())
+options(dplyr.summarise.inform = FALSE)
+options(warn = -1)
+
+# set root path to working directory
+root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
+author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
+
+```
+
+### Define author-written functions (Benoit, Munger, Spirling)
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: TRUE
+
+# function for fit (percent corr predicted)
+prop.correct <- function(x = BTFRE) { 
+    sum(predict(x, type = "response") > .5) / length(predict(x, type = "response"))
+}
+
+# Basic function to do a subset bootstrap
+# It returns an accuracy estimate adjusted as it should be
+boot.one.time <- function(d = job999866covars_chameleons, refmodel) {
+    samp <<- sample(1:nrow(d$easier), nrow(d$easier), replace = TRUE)
+    model.call <<- as.formula(refmodel)
+    BT_resamp <<- BTm(player1 = easier, player2 = harder, formula = model.call, 
+                      id = "ID", data = job999866covars_chameleons, subset = samp)
+    adj.acc <<- prop.correct(BT_resamp) / 0.79
+    adj.acc
+}
+
+# function for fit (percent corr predicted)
+prop.correct <- function(x = BTFRE) { 
+    sum(predict(x, type = "response") > .5) / length(predict(x, type = "response"))
+}
+
+```
+
+#### Fit 4 main models
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# load workspace authors used
+load(file.path(author_rep,"job999866covars_chameleons.rda"))
+
+# run baseline Flesch model
+BT_basic_Flesch <- BTm(player1 = easier, player2 = harder,
+                       formula = ~ Flesch[ID], id = "ID",
+                       data = job999866covars_chameleons)
+
+# run optimal Flesch model
+BT_optimal_Flesch <- BTm(player1 = easier, player2 = harder, 
+                         formula = ~ meanSentenceLength[ID] + meanWordSyllables[ID], 
+                         id = "ID", data = job999866covars_chameleons)
+
+# run basic random forest model
+BT_basic_RF <- BTm(player1 = easier, player2 = harder, 
+                   formula = ~ google_min_2000[ID] + meanSentenceChars[ID] + pr_noun[ID], 
+                   id ="ID", data = job999866covars_chameleons)
+
+# run best model
+BT_best <- BTm(player1 = easier, player2 = harder, 
+               formula = ~ google_min_2000[ID] +  meanSentenceChars[ID] + pr_noun[ID] + meanWordChars[ID], 
+               id = "ID", data = job999866covars_chameleons)
+
+# save results from four models
+model_results <- list(BT_basic_Flesch = BT_basic_Flesch, 
+                      BT_basic_RF = BT_basic_RF, 
+                      BT_optimal_Flesch = BT_optimal_Flesch, 
+                      BT_best = BT_best)
+
+```
+
+#### Create table 2
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# put models in a list
+models <- list("FRE Baseline"   = BT_basic_Flesch,
+               "FRE Reweight"   = BT_optimal_Flesch,
+               "Basic RF Model" = BT_basic_RF,
+               "Best Model"     = BT_best)
+
+fmt <- list(
+       list("raw" = "nobs", "clean" = "N", "fmt" = 0),
+       list("raw" = "adj.r.squared", "clean" = "Adjusted $R^2$", "fmt" = 2),
+       list("raw" = "rmse", "clean" = "$\\sigma$", "fmt" = 2))
+
+# produce LaTeX table
+msummary(models,
+         escape = FALSE,
+         title = "Table 2. Comparing the Performance of the Structured Models",
+         coef_rename = c("Flesch[ID]"               = "FRE",
+                        "meanSentenceLength[ID]"    = "meanSentenceLength",
+                        "meanWordSyllables[ID]"     = "meanWordSyllables",
+                        "google_min_2000[ID]"       = "google_min",
+                        "meanSentenceChars[ID]"     = "meanSentenceChars",
+                        "pr_noun[ID]"               = "pr_noun",
+                        "meanWordChars[ID]"         = "meanWordChars"))
+
+#prop.correct(model_results[[m]]) / .79)
+
+```
+
+#### Create table 3
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+txt_clinton <- "If we do these things-end social promotion; turn around failing schools; build modern ones; support qualified teachers; promote innovation, competition and discipline-then we will begin to meet our generation's historic responsibility to create 21st century schools.  Now, we also have to do more to support the millions of parents who give their all every day at home and at work."
+
+txt_bush <- "And the victory of freedom in Iraq will strengthen a new ally in the war on  terror, inspire democratic reformers from Damascus to Tehran, bring more hope  and progress to a troubled region, and thereby lift a terrible threat from the  lives of our children and grandchildren.  We will succeed because the Iraqi  people value their own liberty---as they showed the world last Sunday."
+
+corp_example <- corpus(c(Clinton_1999 = txt_clinton, 
+                         Bush_2005 = txt_bush))
+
+example_covs <- covars_make_all(corp_example)
+
+tab3 <- as.data.frame(sophistication:::get_covars_from_newdata.corpus(corp_example))
+row.names(tab3) <- tab3[, "_docid"]
+tab3 <- tab3[, c("google_min", "meanSentenceChars", "pr_noun", "meanWordChars")]
+tab3 <- t(tab3)
+tab3[1, , drop = FALSE]
+round(tab2[2:4, ], 2)
+
+# ---- lambdas computed with precision
+prd <- predict_readability(BT_best, corp_example)
+
+tab3rounded <- round(tab3, 2)
+tab3rounded[1, 1] <- round(tab3[1, 1], 6)
+tab3rounded[1, 2] <- round(tab3[1, 2], 10)
+tab3lambdas <- round(round(coef(BT_best), 2) %*% tab3rounded, 2)
+tab3lambdas
+
+# ---- Pr(Clinton snippet easier than Bush snippet) from TEXT
+exp(tab3lambdas[1, "Clinton_1999"]) / 
+    (exp(tab3lambdas[1, "Clinton_1999"]) + exp(tab3lambdas[1, "Bush_2005"]))
+
+```
+
+#### Generate SOTU paragraphs
+
+```{r}
+
+data(data_corpus_sotu, package = "quanteda.corpora")
+
+# convert to paragraphs and tidy up
+
+data_corpus_sotuparagraphs <- corpus_reshape(data_corpus_sotu, to = "paragraphs")
+toremove <- rep(FALSE, ndoc(data_corpus_sotuparagraphs))
+
+# remove paragraphs with all caps titles
+# toremove <- toremove | 
+#     grepl("^(([A-Z.\"\'&-]|[0-9])+\\.{0,1}\\s{1,})*([A-Z]+\\s{0,1})+[.:]{0,1}$", texts(data_corpus_sotuparagraphs))
+toremove <- toremove | 
+    grepl("^([A-Z0-9[:punct:]]+\\s{0,1})+\\.{0,1}$", as.character(data_corpus_sotuparagraphs))
+
+# remove paragraphs with long figures (from a table)
+toremove <- toremove | 
+     grepl("(\\d{1,3}(,\\d{3}){1,}(\\.\\d{2})*(\\s\\-\\s)+)", as.character(data_corpus_sotuparagraphs))
+    
+# remove any snippets with long ....
+toremove <- toremove | 
+    grepl("\\.{4,}", as.character(data_corpus_sotuparagraphs))
+
+# remove any snippets with ----- (indicates a table)
+toremove <- toremove |
+    grepl("\\-{4,}", as.character(data_corpus_sotuparagraphs))
+
+# remove e.g. "(a) For veterans."
+toremove <- toremove |
+    (grepl("^\\([a-zA-Z0-9]+\\)\\s+.*\\.$",  as.character(data_corpus_sotuparagraphs)) &
+         ntoken(data_corpus_sotuparagraphs) <= 30)
+
+data_corpus_sotuparagraphs <- corpus_subset(data_corpus_sotuparagraphs, !toremove)
+
+
+# summary statistics
+summary(summary(data_corpus_sotuparagraphs, n = ndoc(data_corpus_sotuparagraphs)))
+
+# add readability stats
+docvars(data_corpus_sotuparagraphs, "Flesch") <- 
+    textstat_readability(data_corpus_sotuparagraphs, "Flesch")[["Flesch"]]
+
+# add predicted BMS "static"
+rdblty_2000 <- predict_readability(BT_best, data_corpus_sotuparagraphs,
+                                   baseline_year = 2000, bootstrap_n = 100)
+names(rdblty_2000) <- paste(names(rdblty_2000), "2000", sep = "_")
+# add predicted BMS "dynamic"
+rdblty_local <- predict_readability(BT_best, data_corpus_sotuparagraphs,
+                                    baseline_year = lubridate::year(docvars(data_corpus_sotuparagraphs, "Date")),
+                                    bootstrap_n = 100)
+names(rdblty_local) <- paste(names(rdblty_local), "local", sep = "_")
+
+
+docvars(data_corpus_sotuparagraphs) <- 
+    cbind(docvars(data_corpus_sotuparagraphs), rdblty_2000, rdblty_local)
+
+
+
+```
+#### Generate figure 1
+
+```{r}
+
+# get FRE scores for the snippets
+dat <- job999866covars_chameleons
+FRE <- dat$predictors$Flesch
+
+names(FRE) <- rownames(dat$predictors)
+
+# get lambdas from BMS best fitting model
+main_lambdas <- BTabilities(BT_best)[,"ability"]
+
+# rescale lambdas to the 0-100 space correctly
+rescaled_lambdas <- 226.06927 + 57.93899 * main_lambdas
+
+# check that they are matched up
+m <- match(names(FRE), names(rescaled_lambdas)) ## they are matched up
+
+ggplot(data.frame(FRE = FRE, rslambda = rescaled_lambdas), aes(x = FRE, y = rslambda)) +
+    geom_point(size = .6) +
+    labs(y = "Rescaled Best BT Model") +
+    geom_smooth(method = "lm", se = TRUE) +
+    geom_hline(yintercept = c(0, 100), linetype = "dashed", color = "firebrick") +
+    theme(axis.text.x = element_text(size = 5),
+          axis.text.y = element_text(size = 5)) +
+    theme_classic()
+
+```
+
+#### Generate figure 2
+
+```{r}
+
+data_corpus_sotuclean <- data_corpus_sotuparagraphs %>%
+    corpus_reshape(to = "documents") %>%
+    corpus_subset(!grepl("(1945|1956|1972|1978|1979|1980)b", docnames(.))) 
+
+docvars(data_corpus_sotuclean, "year") <- lubridate::year(docvars(data_corpus_sotuclean, "Date"))
+
+lamba5thgrade <- 
+    predict_readability(BT_best, newdata = texts(data_corpus_fifthgrade, groups = rep(1, ndoc(data_corpus_fifthgrade))))[, "lambda"]
+
+predrd <- predict_readability(BT_best, newdata = data_corpus_sotuclean, 
+                              reference_top = lamba5thgrade,
+                              baseline_year = docvars(data_corpus_sotuclean, "year"), 
+                              bootstrap_n = 100)
+
+# add the results to the corpus docvars
+docvars(data_corpus_sotuclean, names(predrd)) <- predrd
+
+# compute FRE ratio to 5th grade texts
+docvars(data_corpus_sotuclean, "FREv5thgrade") <- 
+    0.5 * 
+    textstat_readability(data_corpus_sotuclean, "Flesch")[["Flesch"]] /
+    textstat_readability(texts(data_corpus_fifthgrade, 
+                               groups = rep(1, ndoc(data_corpus_fifthgrade))), "Flesch")[["Flesch"]]
+
+ggplot(data = docvars(data_corpus_sotuclean)) +
+    xlab("") +
+    ylab("Probability that SOTU is Easier than a 5th Grade Text") +
+    geom_point(aes(x = year, y = prob), size = 1.5, color = "black", shape = 16) +
+    geom_errorbar(aes(ymin = prob_lo, ymax = prob_hi, x = year), width = 0.25) +
+    geom_smooth(aes(x = year, y = prob), span = .15, color = "blue") +
+    geom_hline(yintercept = 0.50, linetype = "dashed", color = "firebrick") +
+    theme(legend.position = c(1820, 0.4),
+          axis.text.x = element_text(size = 5),
+          axis.text.y = element_text(size = 5)) +
+    theme_classic()
+
+```
+
+#### Generate figure 3
+
+```{r}
+
+data_corpus_sotucompare <- data_corpus_sotuparagraphs %>%
+    corpus_reshape(to = "documents") %>%
+    corpus_subset(lubridate::year(Date) %in% c(1956, 1945, 1972, 1974, 1978:1980))
+
+predrd <- predict_readability(BT_best, newdata = data_corpus_sotucompare, 
+                              baseline_year = lubridate::year(docvars(data_corpus_sotucompare, "Date")), 
+                              bootstrap_n = 500)
+pred <- data.frame(predrd, 
+                   id = paste(docvars(data_corpus_sotucompare, "President"), 
+                              lubridate::year(docvars(data_corpus_sotucompare, "Date")), sep = "-"), 
+                   delivery = docvars(data_corpus_sotucompare, "delivery"),
+                   stringsAsFactors = FALSE)
+
+pred <- reshape(pred, timevar = "delivery", idvar = "id", direction = "wide")
+
+pred <- within(pred, {
+    PrSpokenEasier <- exp(lambda.spoken) / (exp(lambda.spoken) + exp(lambda.written))
+    PrSpokenEasier_lo <- exp(lambda_lo.spoken) / (exp(lambda_lo.spoken) + exp(lambda_lo.written))
+    PrSpokenEasier_hi <- exp(lambda_hi.spoken) / (exp(lambda_hi.spoken) + exp(lambda_hi.written))
+})
+
+# reorder factor levels for id
+pred$id <- factor(pred$id, levels = rev(pred$id))
+
+ggplot(pred, aes(x = id)) +
+    geom_point(aes(y = PrSpokenEasier)) +
+    scale_y_continuous(name = "Probability that Spoken SOTU was Easier than Written", 
+                       limits = c(.3, .7),
+                       breaks = seq(.3, .7, by = .1)) +
+    labs(x = "") + 
+    geom_hline(yintercept = .5, linetype = "dashed", color = "firebrick") +
+    geom_errorbar(aes(ymin = PrSpokenEasier_lo, 
+                      ymax = PrSpokenEasier_hi, x = id), width = 0) +
+    theme(axis.text.x = element_text(size = 10),
+          axis.text.y = element_text(size = 10)) +
+    theme_classic() + 
+    coord_flip()
+
+```
