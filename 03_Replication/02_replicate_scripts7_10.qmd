@@ -44,10 +44,184 @@ options(dplyr.summarise.inform = FALSE)
 options(warn = -1)
 
 # set root path to working directory
-root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
-author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
+#root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
+#author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
+```
+
+#### Wendy's Part
+
+```{r}
+#devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
+#library("spacyr")
+#spacy_install()
+#spacy_initialize()
+#devtools::install_github("kbenoit/sophistication")
+
+#--------------------------------
+library(quanteda)
+library(sophistication)
+library(BradleyTerry2)
+library(tidyverse)
+```
+
+### Generating data using `bt_input_make()`
+
+```{r}
+#Load human coded Crowdsourcing data
+setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
+allsentences <-
+    rbind(read.csv("CF_output_f999866.csv", stringsAsFactors = FALSE),
+          read.csv("CF_output_f952737.csv", stringsAsFactors = FALSE))
+
+#preparing data for BT Model
+job999866covars_chameleons <-
+    bt_input_make(allsentences, covars = TRUE,
+                  readability_measure = c("Flesch", #Measures text difficulty
+                                          "Dale.Chall",
+                                          "FOG", 
+                                          "SMOG",
+                                          "Spache",
+                                          "Coleman.Liau"),
+                  covars_baseline = TRUE, covars_pos = TRUE, normalize = TRUE)
+
+#save(job999866covars_chameleons, file = "job999866covars_chameleons.rda")
+```
+
+### Alternative: produce the same Data
+
+```{r}
+setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
+
+#Stack the data on top of one another
+allsentences <-
+    rbind(read.csv("CF_output_f999866.csv", stringsAsFactors = FALSE),
+          read.csv("CF_output_f952737.csv", stringsAsFactors = FALSE))
+# select just the texta and their IDs
+allsentences <- allsentences[, c("snippetid1", "text1", "snippetid2", "text2")]
+
+
+# wrap the sentences
+allsentences <- data.frame(snippetid = c(allsentences[, "snippetid1"],
+                                         allsentences[, "snippetid2"]),
+                           text = c(allsentences[, "text1"],
+                                    allsentences[, "text2"]),
+                           stringsAsFactors = FALSE)
+
+# just keep the unique ones
+allsentences <- allsentences[!duplicated(allsentences$snippetid), ]
+nrow(allsentences)
+
+# create the basic covariates
+allsentences_covars <- cbind(
+    allsentences,
+    covars_make(allsentences$text, readability_measure = "Flesch"),
+    covars_make_baselines(allsentences$text)
+)
+
+#Adding the POS (part of speech covariate)
+txt <- allsentences$text
+names(txt) <- allsentences$snippetid #Define a new vector called txt (extract a single column)
+# add the POS covariates
+allsentences_pos <- covars_make_pos(txt)
+
+# add the POS covariates
+job999866covars <-
+    merge(allsentences_covars, allsentences_pos, by.x = "snippetid", by.y = "doc_id")
+#save(job999866covars, file = "job999866covars.rda")
 
 ```
+
+### BT Model Result Generation
+
+Note that I did not run this part on my computer!
+
+```{r}
+load("job999866covars_chameleons.rda")
+dat <- job999866covars_chameleons
+
+BT_unstruc_brT <-
+    BTm(player1 = easier, player2 = harder, br = TRUE, id = "ID", data = dat)
+#save(BT_unstruc_brT, file = "BT_unstructured_brT_abilities.rda")
+```
+
+#### Bradley Terry Model Result Generation
+
+```{r}
+setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
+
+#Load BT unstructured model result
+load("BT_unstructured_brT_abilities.rda")
+BT1 <- BT_unstruc_brT 
+
+#Load Covariate data
+load("job999866covars_chameleons.rda")
+dat <- job999866covars_chameleons
+
+#The Ability (Difficulties score in this context) represent how likely an aricle is classified as "easier to read" - Wendy
+check <- BTabilities(BT1)
+```
+
+#### Random Forest Result generation
+
+```{r}
+# locate the relevant predictors in the predictors part of the data
+y <- BTabilities(BT1)[, "ability"] #Extract the ability column 
+#This gives a quantifies difficulties score based on human encoding result, as a linear combination of the other two
+
+yy <- y[!is.na(y)] #remove NAs
+
+#return row number, match left to right find the corresponding 
+m <- match(names(yy), rownames(dat$predictors)) #We want the x values
+
+# collect the possible terms -- note that we remove Flesch (because it's aliased by the other variables)
+terms <- c("W3Sy", "W2Sy", "W_1Sy", "W6C", "W7C", "W_wl.Dale.Chall", "Wlt3Sy", 
+           "meanSentenceLength", "meanWordSyllables", "meanWordChars", 
+           "meanSentenceChars", "meanSentenceSyllables", "brown_mean", "brown_min", 
+           "google_mean_2000", "google_min_2000", "pr_noun", "pr_verb", "pr_adjective", 
+           "pr_adverb", "pr_clause", "pr_sentence")
+
+#Create X for random forest
+X <- dat$predictors[m, terms]
+```
+
+#### Feature reduced Random Forest Model
+
+Pretty fast to run
+
+```{r}
+# use randomForest instead of VSURF
+# Ultimately, the random forest classifer is a 2453 by 22 matrix, with our manually selected features - Wendy
+library("randomForest") 
+
+mod <- randomForest(X, y = yy, ntree = 1000)
+mod_bias_reduced <- mod
+#save(x = mod_bias_reduced, file = "rf_model_bias_reduced.rda")
+```
+
+**Random Forest Model with all features**
+
+```{r}
+#This is the same as above, we are BT Model to train both bias reduced RF model and RF model with all features - Wendy
+#setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
+#load("BT_unstructured_brF_abilities.rda")
+BT2 <-  BT_unstruc_brF
+
+# locate the relevant predictors in the predictors part of the data
+y2 <- BTabilities(BT2)[, "ability"]
+yy2 <- y2[!is.na(y2)] #remove NAs
+mm <- match(names(yy2), rownames(dat$predictors))
+
+#Instead of having a selected features, we use all features
+X2 <- dat$predictors[mm, terms]
+
+# use randomForest instead of VSURF
+mod2 <- randomForest(X2, y = yy2, ntree = 1000)
+
+mod_non_bias_reduced<-mod2
+#save(x = mod_non_bias_reduced, file = "rf_model_non_bias_reduced.rda")
+```
+
+### Maria's Part
 
 ### Define author-written functions (Benoit, Munger, Spirling)
 
@@ -250,6 +424,7 @@ docvars(data_corpus_sotuparagraphs) <-
 
 
 ```
+
 #### Generate figure 1
 
 ```{r}
