@@ -48,7 +48,7 @@ options(warn = -1)
 #author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
 ```
 
-#### Wendy's Part
+### Wendy's Part
 
 ```{r}
 #devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
@@ -139,12 +139,21 @@ Note that I did not run this part on my computer!
 load("job999866covars_chameleons.rda")
 dat <- job999866covars_chameleons
 
+# fit unstructured model with bias reduction (br=T)--------------------
 BT_unstruc_brT <-
     BTm(player1 = easier, player2 = harder, br = TRUE, id = "ID", data = dat)
 #save(BT_unstruc_brT, file = "BT_unstructured_brT_abilities.rda")
+
+
+# fit unstructured model without bias reduction (br=F)-----------------
+BT_unstruc_brF <- 
+    BTm(player1 = easier, player2 = harder, br = FALSE, id = "ID", data = dat)
+#save(BT_unstruc_brF, file ="BT_unstructured_brF_abilities.rda")
 ```
 
-#### Bradley Terry Model Result Generation
+### Random Forest Result generation
+
+***Biased Reduced = True*** **BT Model with reduced random forest features**
 
 ```{r}
 setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
@@ -160,8 +169,6 @@ dat <- job999866covars_chameleons
 #The Ability (Difficulties score in this context) represent how likely an aricle is classified as "easier to read" - Wendy
 check <- BTabilities(BT1)
 ```
-
-#### Random Forest Result generation
 
 ```{r}
 # locate the relevant predictors in the predictors part of the data
@@ -184,10 +191,6 @@ terms <- c("W3Sy", "W2Sy", "W_1Sy", "W6C", "W7C", "W_wl.Dale.Chall", "Wlt3Sy",
 X <- dat$predictors[m, terms]
 ```
 
-#### Feature reduced Random Forest Model
-
-Pretty fast to run
-
 ```{r}
 # use randomForest instead of VSURF
 # Ultimately, the random forest classifer is a 2453 by 22 matrix, with our manually selected features - Wendy
@@ -198,10 +201,10 @@ mod_bias_reduced <- mod
 #save(x = mod_bias_reduced, file = "rf_model_bias_reduced.rda")
 ```
 
-**Random Forest Model with all features**
+***Biased Reduced = False*** **BT Model with all features**
 
 ```{r}
-#This is the same as above, we are BT Model to train both bias reduced RF model and RF model with all features - Wendy
+#Bias-Reduction-False model for Random Forest Model with all features
 #setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
 #load("BT_unstructured_brF_abilities.rda")
 BT2 <-  BT_unstruc_brF
@@ -219,6 +222,26 @@ mod2 <- randomForest(X2, y = yy2, ntree = 1000)
 
 mod_non_bias_reduced<-mod2
 #save(x = mod_non_bias_reduced, file = "rf_model_non_bias_reduced.rda")
+```
+
+### Make Co-variate for the requested text
+
+```{r}
+#This takes about a few minutes to run
+library("sophistication")
+library("spacyr")
+spacy_initialize()
+
+# sotu addresses
+data(data_corpus_sotu, package = "quanteda.corpora")
+
+x1 <- covars_make(data_corpus_sotu)
+x2 <- covars_make_pos(data_corpus_sotu)
+x3 <- covars_make_baselines(data_corpus_sotu, 
+                            baseline_year = lubridate::year(docvars(data_corpus_sotu, "Date")))
+
+sotu_covars <- cbind(x1, x2, x3)
+#save(sotu_covars, file = "sotu_covars.rda")
 ```
 
 ### Maria's Part
