@@ -1,5 +1,5 @@
 ---
-title: ""
+title: "Replication Code for: Measuring and Explaining Political Sophistication through Textual Complexity"
 subtitle: "PPOL 6801: Text as Data: Computational Linguistics"
 author: "Wendy Shi & Maria Bartlett"
 date: "`r Sys.Date()`"
@@ -29,6 +29,13 @@ rm(list = ls())
 # set seed
 set.seed(12345)
 
+# provide instruction for how to install user-written packages
+#devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
+#library(spacyr)
+#spacy_install()
+#spacy_initialize()
+#devtools::install_github("kbenoit/sophistication")
+
 # load packages
 library(tidyverse)
 library(spacyr)
@@ -37,6 +44,9 @@ library(BradleyTerry2)
 library(modelsummary)
 library(quanteda)
 library(quanteda.textstats)
+library(assertr)
+library(DT)
+library(randomForest) 
 
 # set processing/display options
 options(mc.cores = parallel::detectCores())
@@ -44,207 +54,10 @@ options(dplyr.summarise.inform = FALSE)
 options(warn = -1)
 
 # set root path to working directory
-#root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
-#author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
-```
-
-### Wendy's Part
-
-```{r}
-#devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
-#library("spacyr")
-#spacy_install()
-#spacy_initialize()
-#devtools::install_github("kbenoit/sophistication")
-
-#--------------------------------
-library(quanteda)
-library(sophistication)
-library(BradleyTerry2)
-library(tidyverse)
-```
-
-### Generating data using `bt_input_make()`
-
-```{r}
-#Load human coded Crowdsourcing data
-setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
-allsentences <-
-    rbind(read.csv("CF_output_f999866.csv", stringsAsFactors = FALSE),
-          read.csv("CF_output_f952737.csv", stringsAsFactors = FALSE))
-
-#preparing data for BT Model
-job999866covars_chameleons <-
-    bt_input_make(allsentences, covars = TRUE,
-                  readability_measure = c("Flesch", #Measures text difficulty
-                                          "Dale.Chall",
-                                          "FOG", 
-                                          "SMOG",
-                                          "Spache",
-                                          "Coleman.Liau"),
-                  covars_baseline = TRUE, covars_pos = TRUE, normalize = TRUE)
-
-#save(job999866covars_chameleons, file = "job999866covars_chameleons.rda")
-```
-
-### Alternative: produce the same Data
-
-```{r}
-setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
-
-#Stack the data on top of one another
-allsentences <-
-    rbind(read.csv("CF_output_f999866.csv", stringsAsFactors = FALSE),
-          read.csv("CF_output_f952737.csv", stringsAsFactors = FALSE))
-# select just the texta and their IDs
-allsentences <- allsentences[, c("snippetid1", "text1", "snippetid2", "text2")]
-
-
-# wrap the sentences
-allsentences <- data.frame(snippetid = c(allsentences[, "snippetid1"],
-                                         allsentences[, "snippetid2"]),
-                           text = c(allsentences[, "text1"],
-                                    allsentences[, "text2"]),
-                           stringsAsFactors = FALSE)
-
-# just keep the unique ones
-allsentences <- allsentences[!duplicated(allsentences$snippetid), ]
-nrow(allsentences)
-
-# create the basic covariates
-allsentences_covars <- cbind(
-    allsentences,
-    covars_make(allsentences$text, readability_measure = "Flesch"),
-    covars_make_baselines(allsentences$text)
-)
-
-#Adding the POS (part of speech covariate)
-txt <- allsentences$text
-names(txt) <- allsentences$snippetid #Define a new vector called txt (extract a single column)
-# add the POS covariates
-allsentences_pos <- covars_make_pos(txt)
-
-# add the POS covariates
-job999866covars <-
-    merge(allsentences_covars, allsentences_pos, by.x = "snippetid", by.y = "doc_id")
-#save(job999866covars, file = "job999866covars.rda")
+root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
+author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
 
 ```
-
-### BT Model Result Generation
-
-Note that I did not run this part on my computer!
-
-```{r}
-load("job999866covars_chameleons.rda")
-dat <- job999866covars_chameleons
-
-# fit unstructured model with bias reduction (br=T)--------------------
-BT_unstruc_brT <-
-    BTm(player1 = easier, player2 = harder, br = TRUE, id = "ID", data = dat)
-#save(BT_unstruc_brT, file = "BT_unstructured_brT_abilities.rda")
-
-
-# fit unstructured model without bias reduction (br=F)-----------------
-BT_unstruc_brF <- 
-    BTm(player1 = easier, player2 = harder, br = FALSE, id = "ID", data = dat)
-#save(BT_unstruc_brF, file ="BT_unstructured_brF_abilities.rda")
-```
-
-### Random Forest Result generation
-
-***Biased Reduced = True*** **BT Model with reduced random forest features**
-
-```{r}
-setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
-
-#Load BT unstructured model result
-load("BT_unstructured_brT_abilities.rda")
-BT1 <- BT_unstruc_brT 
-
-#Load Covariate data
-load("job999866covars_chameleons.rda")
-dat <- job999866covars_chameleons
-
-#The Ability (Difficulties score in this context) represent how likely an aricle is classified as "easier to read" - Wendy
-check <- BTabilities(BT1)
-```
-
-```{r}
-# locate the relevant predictors in the predictors part of the data
-y <- BTabilities(BT1)[, "ability"] #Extract the ability column 
-#This gives a quantifies difficulties score based on human encoding result, as a linear combination of the other two
-
-yy <- y[!is.na(y)] #remove NAs
-
-#return row number, match left to right find the corresponding 
-m <- match(names(yy), rownames(dat$predictors)) #We want the x values
-
-# collect the possible terms -- note that we remove Flesch (because it's aliased by the other variables)
-terms <- c("W3Sy", "W2Sy", "W_1Sy", "W6C", "W7C", "W_wl.Dale.Chall", "Wlt3Sy", 
-           "meanSentenceLength", "meanWordSyllables", "meanWordChars", 
-           "meanSentenceChars", "meanSentenceSyllables", "brown_mean", "brown_min", 
-           "google_mean_2000", "google_min_2000", "pr_noun", "pr_verb", "pr_adjective", 
-           "pr_adverb", "pr_clause", "pr_sentence")
-
-#Create X for random forest
-X <- dat$predictors[m, terms]
-```
-
-```{r}
-# use randomForest instead of VSURF
-# Ultimately, the random forest classifer is a 2453 by 22 matrix, with our manually selected features - Wendy
-library("randomForest") 
-
-mod <- randomForest(X, y = yy, ntree = 1000)
-mod_bias_reduced <- mod
-#save(x = mod_bias_reduced, file = "rf_model_bias_reduced.rda")
-```
-
-***Biased Reduced = False*** **BT Model with all features**
-
-```{r}
-#Bias-Reduction-False model for Random Forest Model with all features
-#setwd("/Users/wendyshi2001/Desktop/Computational Linguistic/Text_Group_Work/Wendy_Part")
-#load("BT_unstructured_brF_abilities.rda")
-BT2 <-  BT_unstruc_brF
-
-# locate the relevant predictors in the predictors part of the data
-y2 <- BTabilities(BT2)[, "ability"]
-yy2 <- y2[!is.na(y2)] #remove NAs
-mm <- match(names(yy2), rownames(dat$predictors))
-
-#Instead of having a selected features, we use all features
-X2 <- dat$predictors[mm, terms]
-
-# use randomForest instead of VSURF
-mod2 <- randomForest(X2, y = yy2, ntree = 1000)
-
-mod_non_bias_reduced<-mod2
-#save(x = mod_non_bias_reduced, file = "rf_model_non_bias_reduced.rda")
-```
-
-### Make Co-variate for the requested text
-
-```{r}
-#This takes about a few minutes to run
-library("sophistication")
-library("spacyr")
-spacy_initialize()
-
-# sotu addresses
-data(data_corpus_sotu, package = "quanteda.corpora")
-
-x1 <- covars_make(data_corpus_sotu)
-x2 <- covars_make_pos(data_corpus_sotu)
-x3 <- covars_make_baselines(data_corpus_sotu, 
-                            baseline_year = lubridate::year(docvars(data_corpus_sotu, "Date")))
-
-sotu_covars <- cbind(x1, x2, x3)
-#save(sotu_covars, file = "sotu_covars.rda")
-```
-
-### Maria's Part
 
 ### Define author-written functions (Benoit, Munger, Spirling)
 
@@ -273,6 +86,315 @@ boot.one.time <- function(d = job999866covars_chameleons, refmodel) {
 prop.correct <- function(x = BTFRE) { 
     sum(predict(x, type = "response") > .5) / length(predict(x, type = "response"))
 }
+
+```
+
+### Step 1. Load Crowdsourced data
+
+As directly quoted from `Codebook.pdf` in Benoit, Munger, and Spirling's replication package:
+
+"These are the coded snippet comparisons that were downloaded from Crowdflower after the crowd-sourced job was completed."
+
+Key variables (definitions quoted directly from `Codebook.pdf`):  "
+
+- `docID1`: The document ID for the text from which first snippet was taken, e.g. “Bush-2005”
+
+- `snippetID1`: A unique numeric snippet identifier for snippet 1
+
+- `text1:` The plain text of snippet 1
+
+- same `docID2`,`snippedID2`, `text2` for snippet 2
+
+- `X_golden`: a logical value (TRUE or FALSE) indicating whether the snippet pair was a “gold” question for which we supplied an answer
+
+- `screener`: a logical value TRUE indicating whether the question was a "screener" (a special gold question with embedded instructions to the coder as to how to answer the task) or blank if the question was not a screener.
+
+- `X_id`: a unique numeric identifier for the answer, assigned by Crowdflower (e.g. 2025513496)
+
+- `X_missed`: a Boolean (true or blank) indicating whether the crowd worker missed a gold question
+
+- `X_tainted`: a Boolean (true or false) indicating whether the answer was “tainted” because the worker missed too many screening questions. Because we excluded tainted answers, in our data, all values of this variable are false.
+
+- `X_trust`: the "trust" score for the respondent, as computed by Crowdflower. Our minimum was 0.60 and our mean answer had a trust value of around 0.86.
+
+- `X_worker_id`: a unique numeric identifier for the worker, e.g. 34616922
+
+- `easier`: 1 or 2, indicating which snippet was answered as being easier by the worker. This is the core data we used in scoring the snippets.
+
+"
+
+```{r}
+
+# load human-coded data of SOTU passages from CrowdFlower
+allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), stringsAsFactors = FALSE),
+                      read.csv(file.path(author_rep,"CF_output_f952737.csv"), stringsAsFactors = FALSE)) %>%
+  # confirm file is unique on id level
+  verify(anyDuplicated(select(.,c(X_id))) == 0) %>%
+  # check dimensions of data
+  verify(nrow(.) == 27807 & ncol(.) == 25) %>%
+  # confirm all tainted responses have been removed
+  verify(X_tainted == "false")
+
+# output a few examples of text comparisons
+allsentences %>%
+  select(X_id,X_worker_id,snippetid1,docid1,text1,snippetid2,docid2,text2,easier) %>%
+  distinct() %>%
+  slice_head(n = 5) %>%
+  datatable()
+
+# CrowdFlower data contains 3,322 text snippets derived from 226 SOTU speeches
+stopifnot(length(unique(c(allsentences$snippetid1,allsentences$snippetid2))) == 3322)
+stopifnot(length(unique(c(allsentences$docid1,allsentences$docid2))) == 226)
+
+```
+
+### Step 2. Prepare data for Bradley-Terry model
+
+Author assumes a complex text:
+
+- Uses longer words more often
+
+- Uses relatively uncommon words more often (keeping in mind that word rarity differs depending on time period)
+
+- Uses longer sentences
+
+- Uses more complex grammar structure (e.g., multiple clauses, subordinate clauses - "this may also take the form of greater reliance on particular parts of speech, such as nouns or adjectives")
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# add covariates to prepare data for BT Model
+job999866covars_chameleons <-
+    bt_input_make(allsentences, 
+                  # add covariates for each snippet, taken directly from Crowdflower saved data
+                  covars = TRUE,
+                  # specify measures text difficulty
+                  readability_measure = c("Flesch", 
+                                          "Dale.Chall",
+                                          "FOG", 
+                                          "SMOG",
+                                          "Spache",
+                                          "Coleman.Liau"),
+                  # add summary baseline frequencies compared to Google and Brown corpora speech
+                  # computed by covars_make_pos()
+                  covars_baseline = TRUE, 
+                  # add frequencies of parts of speech computed by covars_make_pos()
+                  covars_pos = TRUE, 
+                  # return appropriately normalized covariates (including parts of speech if applicable)
+                  normalize = TRUE)
+
+# 'easier' data: at the pairwise-comparison level, contains an ID with the unique snippet ID of the 
+# ID that won the comparison
+job999866covars_chameleons$easier %>%
+  verify(nrow(.) == 19430) %>%
+  head() %>%
+  datatable()
+
+# 'harder' data: at the pairwise-comparison level, contains an ID with the unique snippet ID of the 
+# ID that lost the comparison
+job999866covars_chameleons$harder %>%
+  verify(nrow(.) == 19430) %>%  # same number of records as easier dataset because still at pairwise-comparison level
+  head() %>%
+  datatable()
+
+# 'predictors' data: data with predictors associated with each distinct snippet, where the id of the row.name
+# corresponds with the ID in the 'easier' and 'harder' dataframes
+job999866covars_chameleons$predictors %>%
+  # confirm unique at snippet level (which is now called doc_id)
+  verify(anyDuplicated(select(.,c(doc_id))) == 0) %>%
+  head() %>%
+  datatable(options = list(scrollX='400px'))
+
+```
+
+#### Step 2.1. Data understanding checks
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# merge data to be sure we understand how data is working
+pred_data <- job999866covars_chameleons$predictors %>%
+  mutate(easier_id = row.names(.),
+         harder_id = row.names(.))
+
+snippet_data1 <- allsentences %>%
+  select(snippetid1,text1) %>%
+  rename(snippetid = snippetid1,
+         text      = text1) %>%
+  distinct()
+
+snippet_data2 <- allsentences %>%
+  select(snippetid2,text2) %>%
+  rename(snippetid = snippetid2,
+         text      = text2) %>%
+  distinct()
+
+snippet_data <- bind_rows(snippet_data1,snippet_data2) %>%
+  distinct() %>%
+  mutate(snippetid = as.character(snippetid))
+
+covars_data <- job999866covars_chameleons$easier %>%
+  rename(easier_id = ID) %>%
+  bind_cols(.,job999866covars_chameleons$harder) %>%
+  rename(harder_id = ID) %>%
+  verify(nrow(.) == 19430) %>%
+  left_join(pred_data, by = "easier_id", relationship = "many-to-one") %>%
+  rename_with(~ paste0("easier_", .), -c(harder_id.x,harder_id.y,easier_id)) %>%
+  select(-harder_id.y) %>%
+  rename(harder_id = harder_id.x) %>%
+  left_join(pred_data, by = "harder_id", relationship = "many-to-one") %>%
+  rename_with(~ paste0("harder_", .), -c(starts_with("harder"),starts_with("easier"))) %>%
+  select(-easier_id.y) %>%
+  rename(easier_id = easier_id.x) %>%
+  left_join(snippet_data, by = c("easier_id" = "snippetid")) %>%
+  rename(easier_text = text) %>%
+  left_join(snippet_data, by = c("harder_id" = "snippetid")) %>%
+  rename(harder_text = text) %>%
+  verify(!is.na(easier_text) & !is.na(harder_text)) %>%
+  relocate(easier_text, .after = easier_id) %>%
+  relocate(harder_text, .after = harder_id) 
+
+covars_data %>%
+  head(1) %>%
+  datatable(options = list(scrollX='400px'))
+
+```
+
+### Step 3. Run Bradley-Terry unstructured models
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# covariate data from above
+dat <- job999866covars_chameleons
+
+load(file.path(author_rep,"BT_unstructured_brT_abilities.rda"))
+load(file.path(author_rep,"BT_unstructured_brF_abilities.rda"))
+
+# fit unstructured model with bias reduction (br=T) [not re-running because of runtime]
+# BT1 <-
+#     BTm(player1 = easier, 
+#         player2 = harder, 
+#         br = TRUE, 
+#         id = "ID", 
+#         data = dat)
+
+BT1 <- BT_unstruc_brT
+
+# fit unstructured model without bias reduction (br=F) [not re-running because of run time]
+# BT2 <- 
+#     BTm(player1 = easier, 
+#         player2 = harder, 
+#         br = FALSE, 
+#         id = "ID", 
+#         data = dat)
+
+BT2 <- BT_unstruc_brF
+
+```
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# baseline "ability" (easiness) as estimated from Bradley-Terry model
+BTabilities(BT1) %>%
+  head(3) %>%
+  datatable()
+
+```
+
+### Step 4. Run Random Forest model for reature selection
+
+**Biased Reduced = True** 
+**BT Model with reduced random forest features**
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# Y target feature: text easiness ("ability")
+# extract ability column from bias-reduced BT model
+# Wendy: this gives a quantifies difficulties score based on human encoding result, as a linear combination of the other two
+y  <- BTabilities(BT1)[, "ability"] 
+
+# remove NAs
+yy <- y[!is.na(y)] 
+
+# return row number, match left to right 
+m <- match(names(yy), rownames(dat$predictors)) 
+
+# collect the possible terms -- note that we remove Flesch (because it's aliased by the other variables)
+terms <- c("W3Sy", "W2Sy", "W_1Sy", "W6C", "W7C", "W_wl.Dale.Chall", "Wlt3Sy", 
+           "meanSentenceLength", "meanWordSyllables", "meanWordChars", 
+           "meanSentenceChars", "meanSentenceSyllables", "brown_mean", "brown_min", 
+           "google_mean_2000", "google_min_2000", "pr_noun", "pr_verb", "pr_adjective", 
+           "pr_adverb", "pr_clause", "pr_sentence")
+
+# X features for random forest
+X <- dat$predictors[m, terms]
+
+# run random forest for bias-reduced model
+mod_bias_reduced <- randomForest(X, y = yy, ntree = 1000)
+
+# display feature importance
+round(importance(mod_bias_reduced), 2)
+
+```
+
+**Biased Reduced = False** 
+**BT Model with all features**
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# Y target feature: text easiness ("ability")
+y2 <- BTabilities(BT2)[, "ability"]
+
+# remove NAs
+yy2 <- y2[!is.na(y2)]
+
+# return row number, match left to right 
+mm <- match(names(yy2), rownames(dat$predictors))
+
+# X features for random forest
+# instead of having a selected features, we use all features
+X2 <- dat$predictors[mm, terms]
+
+# run random forest for non-bias-reduced model
+mod_non_bias_reduced <- randomForest(X2, y = yy2, ntree = 1000)
+
+# display feature importance
+round(importance(mod_non_bias_reduced), 2)
+
+```
+
+### Make Co-variate for the requested text
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# sotu addresses
+data(data_corpus_sotu, package = "quanteda.corpora")
+
+x1 <- covars_make(data_corpus_sotu)
+x2 <- covars_make_pos(data_corpus_sotu)
+x3 <- covars_make_baselines(data_corpus_sotu, 
+                            baseline_year = lubridate::year(docvars(data_corpus_sotu, "Date")))
+
+sotu_covars <- cbind(x1, x2, x3)
 
 ```
 
