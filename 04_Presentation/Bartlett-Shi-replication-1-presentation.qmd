@@ -1,5 +1,5 @@
 ---
-title: "Replication paper 1: Presentation"
+title: A Replication of _Measuring and Explaining Political Sophistication through Textual Complexity_ (Benoit et al., 2019)
 subtitle: "PPOL 6801: Text as Data: Computational Linguistics"
 author: "Wendy Shi & Maria Bartlett"
 date: "February 11, 2025"
@@ -9,7 +9,7 @@ format:
 editor: visual
 ---
 
-# Overview 
+# Overview
 
 ```{r}
 
@@ -37,28 +37,34 @@ kable_style <- function(df) {
 
 ```
 
-## Introduction
+# Introduction
 
--   Text
 
-## Methods
 
--   Text
+# Methods
 
-## Results
+
+
+# Results
+
+
+
+<!-- -->
 
 -   Text
 
 <!-- -->
 
--   Text
+# Autopsy
 
-<!-- -->
 
-## Autopsy
 
-Text
+# Extension
 
-## Extension
 
-Text
+
+## References
+
+Benoit, Kenneth, Kevin Munger, and Arthur Spirling. 2019. "Measuring and Explaining Political Sophistication through Textual Complexity." _American Journal of Political Science_ 63 (2): 491–508.doi: 10.1111/ajps.12423
+
+Benoit, Kenneth, 2019, "Replication Data for: Measuring and Explaining Political Sophistication Through Textual Complexity", https://doi.org/10.7910/DVN/9SF3TI, Harvard Dataverse, V1, UNF:6:3lWCX52gHXjVfaeDpmEBPQ== [fileUNF]
