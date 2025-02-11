@@ -215,16 +215,13 @@ job999866covars_chameleons <-
 
 ```
 
-## What the data looks like at this point {.smaller}
+## Snapshot: Data at this point in time {.smaller}
 
 ```{r}
 #| warning: false
 #| output: asis
 #| echo: false
-#| eval: false
-
-# clear global environment
-rm(list = ls())
+#| eval: true
 
 # set seed
 set.seed(12345)
@@ -247,6 +244,7 @@ library(quanteda.textstats)
 library(assertr)
 library(DT)
 library(randomForest) 
+library(kableExtra)
 
 # set root path to working directory
 root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
@@ -261,13 +259,6 @@ allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), st
   verify(nrow(.) == 27807 & ncol(.) == 25) %>%
   # confirm all tainted responses have been removed
   verify(X_tainted == "false")
-
-# output a few examples of text comparisons
-allsentences %>%
-  select(X_id,X_worker_id,snippetid1,docid1,text1,snippetid2,docid2,text2,easier) %>%
-  distinct() %>%
-  slice_head(n = 5) %>%
-  datatable()
 
 # CrowdFlower data contains 3,322 text snippets derived from 226 SOTU speeches
 stopifnot(length(unique(c(allsentences$snippetid1,allsentences$snippetid2))) == 3322)
@@ -337,7 +328,10 @@ covars_data <- job999866covars_chameleons$easier %>%
 
 covars_data %>%
   head(1) %>%
-  datatable(options = list(scrollX='400px'))
+  kbl(full_width = T, 
+      align = "l",
+      booktabs = T) %>%
+  kable_styling(latex_options = c("repeat_header","scale_down","HOLD_position"), font_size = 12) 
 
 ```
 
@@ -355,7 +349,7 @@ covars_data %>%
   
   - **Complex Content:** `pr_noun`
 
-## Run 4 model specifications
+## Run 4 model specifications {.smaller}
 
 ```{r, echo = TRUE, eval = FALSE}
 
@@ -384,7 +378,37 @@ BT_best <- BTm(player1 = easier, player2 = harder,
 
 ## Best model {.smaller}
 
-```{r, echo = FALSE, eval = TRUE}
+**Model 4** (controlling for all four covariates from feature selection) performs best in terms of:
+
+- Lowest Akaike information criterion (AIC)
+
+- Highest proportion of comparisons accurately predicted
+
+- $\hat\beta$s from model 4 are used to construct $\hat\lambda$ probabilities that a text is easier relative to another
+
+## Best model {.smaller}
+
+```{r}
+#| warning: false
+#| output: asis
+#| echo: false
+#| eval: false
+
+# load packages
+library(tidyverse)
+library(spacyr)
+library(sophistication)  
+library(BradleyTerry2)
+library(modelsummary)
+library(quanteda)
+library(quanteda.textstats)
+library(assertr)
+library(DT)
+library(randomForest) 
+
+# set root path to working directory
+root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
+author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
 
 # load workspace authors used
 load(file.path(author_rep,"job999866covars_chameleons.rda"))
@@ -415,21 +439,31 @@ model_results <- list(BT_basic_Flesch = BT_basic_Flesch,
                       BT_optimal_Flesch = BT_optimal_Flesch, 
                       BT_best = BT_best)
 
+# put models in a list
+models <- list("FRE Baseline"   = BT_basic_Flesch,
+               "FRE Reweight"   = BT_optimal_Flesch,
+               "Basic RF Model" = BT_basic_RF,
+               "Best Model"     = BT_best)
 
+fmt <- list(
+       list("raw" = "nobs", "clean" = "N", "fmt" = 0),
+       list("raw" = "adj.r.squared", "clean" = "Adjusted $R^2$", "fmt" = 2),
+       list("raw" = "rmse", "clean" = "$\\sigma$", "fmt" = 2))
+
+# produce LaTeX table
+msummary(models,
+         escape = FALSE,
+         title = "Table 2. Comparing the Performance of the Structured Models",
+         coef_rename = c("Flesch[ID]"               = "FRE",
+                        "meanSentenceLength[ID]"    = "meanSentenceLength",
+                        "meanWordSyllables[ID]"     = "meanWordSyllables",
+                        "google_min_2000[ID]"       = "google_min",
+                        "meanSentenceChars[ID]"     = "meanSentenceChars",
+                        "pr_noun[ID]"               = "pr_noun",
+                        "meanWordChars[ID]"         = "meanWordChars"))
 ```
 
-## Analyzing SOTU data {.smaller}
-
-```{r, echo = FALSE}
-library(png)
-library(grid)
-
-img <- readPNG("fig2.png")
-grid.raster(img)
-
-```
-
-## Comparing to FRE {.smaller}
+## Validation: Comparing to FRE {.smaller}
 
 ```{r, echo = FALSE}
 library(png)
@@ -444,33 +478,33 @@ grid.raster(img)
 
 ## Autopsy {.smaller}
 
-- Had some issues (ultimately got to work) with `sophistication` package because outdated on GitHub
+- Able to replicate feature selection results, model results, and key plots
 
-- One package they use is no longer maintained on CRAN
+- Authors wrote `sophistication` package and replication materials rely heavily on this package; had some initial start-up issues because this package is not actively maintained on GitHub
 
-- We were able to replicate feature selection results, model results, and key plots
-
-- Criticism: no training/test approach; compare to FRE score as a form of validation
+- One package authors use is no longer maintained on CRAN
 
 # Extension
 
 ## Extension {.smaller}
 
-Code updates:
+**Code updates:**
 
-- Clarity and additional data checks to walk through the process
+- Modernized some of the approaches, particularly with data wrangling, to use more of the `tidyverse`
 
-- Modernized some of the approach to use more of the tidyverse
+- Added data checks and amplified comments to add additional clarity
 
-Substantive updates:
+**Substantive proposals:**
 
-- Could run on a different poli sci text (e.g., campaign speeches)
+- Improved model testing (model was trained on all coder data)
 
-- Could consider other machine learning approaches besides random forest (both for feature selection and main model)
+- Improved model validation beyond comparing against FRE score
 
-- Ourselves: Including some measure in tone in covariates (are mor)
+- Run model on different political text (e.g., campaign speeches)
 
-- More resources: Switch out outcome variable in BT model (instead of ease change to sentiment score; this would require new coders)
+- Could consider other machine learning approaches besides random forest for feature selection
+
+- With more resources (would require hiring coders!) change outcome variable in Bradley-Terry model to different measure of interest (e.g., tone)
 
 ## References {.smaller}
 
