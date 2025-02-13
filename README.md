@@ -1,13 +1,6 @@
 # A Replication of _Measuring and Explaining Political Sophistication through Textual Complexity_ (Benoit et al., 2019)
 
-**PPOL 6801: Text as Data: Computational Linguistics**
-
-**McCourt School of Public Policy, Georgetown University**
-
-**Spring 2025**
-
 ## Description
-
 
 ## Paper Research Goals
 
@@ -65,6 +58,10 @@
 ## Authors
 
 Maria Bartlett & Wendy Shi
+
+## Course & Institutional Information
+
+This project was produced as part of the spring 2025 **PPOL 6801: Text as Data: Computational Linguistics** course at **McCourt School of Public Policy at Georgetown University**.
 
 ## References
 
