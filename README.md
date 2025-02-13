@@ -7,7 +7,7 @@
 1. Re-explore determinants of textual sophistication, specifically in a political context
 2. Develop a model for political textual complexity that can be applied to any political text
 	
-## Repository Structure
+## Repository Structure & File Contents
 
 <table>
 	<thead>
