@@ -47,7 +47,7 @@
 		</tr>
   		<tr>
         		<td rowspan="4"><tt>04_Presentation</tt></td>
-			<td rowspan="4">`04_Presentation`</td>
+			<td rowspan="4">Includes presentation materials</td>
 			<td><tt>Bartlett-Shi-replication-1-presentation.qmd</tt></td>
 			<td>QMD script to produce presentation</td>
     		</tr>
@@ -65,7 +65,7 @@
 		</tr>
   		<tr>
         		<td rowspan="2"><tt>05_Paper</tt></td>
-			<td rowspan="2">`05_Paper`</td>
+			<td rowspan="2">Includes final paper materials</td>
 			<td><tt>Bartlett-Shi-replication-1-paper.rmd</tt></td>
 			<td>RMD script to produce Bartlett & Shi final paper</td>
     		</tr>
