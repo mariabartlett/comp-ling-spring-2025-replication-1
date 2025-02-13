@@ -26,34 +26,34 @@
         		<td>`02_DataverseMaterials/dataverse_files`</td><td>XX</td><td>readme.txt</td><td>XX</td>
     		</tr>
     		<tr>
-        		<td rowspan="3">`03_Replication`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		<td rowspan="3">`03_Replication`</td><td rowspan="3">`03_Replication`</td><td>XX</td><td>readme.txt</td>
     		</tr>
     		<tr>
-        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		</td><td>XX</td><td>readme.txt</td>
 		</tr>
 		<tr>
-        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		</td><td>XX</td><td>readme.txt</td>
 		</tr>
   		<tr>
-        		<td rowspan="3">`04_Presentation`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		<td rowspan="3">`04_Presentation`</td><td rowspan="3">`04_Presentation`</td><td>readme.txt</td><td>XX</td>
     		</tr>
     		<tr>
-        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		</td><td>XX</td><td>readme.txt</td>
 		</tr>
 		<tr>
-        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		</td><td>XX</td><td>readme.txt</td>
 		</tr>
   		<tr>
-        		<td rowspan="2">`05_Paper`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		<td rowspan="2">`05_Paper`</td><td rowspan="2">`05_Paper`</td><td>XX</td><td>readme.txt</td>
     		</tr>
     		<tr>
-        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+        		</td><td>XX</td><td>readme.txt</td>
 		</tr>
 
 </table>
 
 
-## Reproducing code
+## Code
 
 ## Authors
 
