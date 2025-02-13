@@ -71,7 +71,7 @@ Benoit, Munger, and Spirling (2019) have two main goals in their paper:
         		<td rowspan="2"><tt>05_Paper</tt></td>
 			<td rowspan="2">Includes final paper materials</td>
 			<td><tt>Bartlett-Shi-replication-1-paper.rmd</tt></td>
-			<td>RMD script to produce Bartlett & Shi final paper</td>
+			<td>RMD script to produce <tt>Bartlett-Shi-replication-1-paper.pdf</tt></td>
     		</tr>
     		<tr>
         		</td><td><tt>Bartlett-Shi-replication-1-paper.pdf</tt></td>
