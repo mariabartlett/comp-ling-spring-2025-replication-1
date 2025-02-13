@@ -89,41 +89,46 @@ prop.correct <- function(x = BTFRE) {
 
 ```
 
+## Part A. Train Text Sophistication Model
+
 ### Step 1. Load Crowdsourced data
 
 As directly quoted from `Codebook.pdf` in Benoit, Munger, and Spirling's replication package:
 
 "These are the coded snippet comparisons that were downloaded from Crowdflower after the crowd-sourced job was completed."
 
-Key variables (definitions quoted directly from `Codebook.pdf`):  "
+Key variables (definitions quoted directly from `Codebook.pdf`): "
 
-- `docID1`: The document ID for the text from which first snippet was taken, e.g. “Bush-2005”
+-   `docID1`: The document ID for the text from which first snippet was taken, e.g. "Bush-2005"
 
-- `snippetID1`: A unique numeric snippet identifier for snippet 1
+-   `snippetID1`: A unique numeric snippet identifier for snippet 1
 
-- `text1:` The plain text of snippet 1
+-   `text1:` The plain text of snippet 1
 
-- same `docID2`,`snippedID2`, `text2` for snippet 2
+-   same `docID2`,`snippedID2`, `text2` for snippet 2
 
-- `X_golden`: a logical value (TRUE or FALSE) indicating whether the snippet pair was a “gold” question for which we supplied an answer
+-   `X_golden`: a logical value (TRUE or FALSE) indicating whether the snippet pair was a "gold" question for which we supplied an answer
 
-- `screener`: a logical value TRUE indicating whether the question was a "screener" (a special gold question with embedded instructions to the coder as to how to answer the task) or blank if the question was not a screener.
+-   `screener`: a logical value TRUE indicating whether the question was a "screener" (a special gold question with embedded instructions to the coder as to how to answer the task) or blank if the question was not a screener.
 
-- `X_id`: a unique numeric identifier for the answer, assigned by Crowdflower (e.g. 2025513496)
+-   `X_id`: a unique numeric identifier for the answer, assigned by Crowdflower (e.g. 2025513496)
 
-- `X_missed`: a Boolean (true or blank) indicating whether the crowd worker missed a gold question
+-   `X_missed`: a Boolean (true or blank) indicating whether the crowd worker missed a gold question
 
-- `X_tainted`: a Boolean (true or false) indicating whether the answer was “tainted” because the worker missed too many screening questions. Because we excluded tainted answers, in our data, all values of this variable are false.
+-   `X_tainted`: a Boolean (true or false) indicating whether the answer was "tainted" because the worker missed too many screening questions. Because we excluded tainted answers, in our data, all values of this variable are false.
 
-- `X_trust`: the "trust" score for the respondent, as computed by Crowdflower. Our minimum was 0.60 and our mean answer had a trust value of around 0.86.
+-   `X_trust`: the "trust" score for the respondent, as computed by Crowdflower. Our minimum was 0.60 and our mean answer had a trust value of around 0.86.
 
-- `X_worker_id`: a unique numeric identifier for the worker, e.g. 34616922
+-   `X_worker_id`: a unique numeric identifier for the worker, e.g. 34616922
 
-- `easier`: 1 or 2, indicating which snippet was answered as being easier by the worker. This is the core data we used in scoring the snippets.
+-   `easier`: 1 or 2, indicating which snippet was answered as being easier by the worker. This is the core data we used in scoring the snippets.
 
 "
 
 ```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
 
 # load human-coded data of SOTU passages from CrowdFlower
 allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), stringsAsFactors = FALSE),
@@ -152,13 +157,13 @@ stopifnot(length(unique(c(allsentences$docid1,allsentences$docid2))) == 226)
 
 Author assumes a complex text:
 
-- Uses longer words more often
+-   Uses longer words more often
 
-- Uses relatively uncommon words more often (keeping in mind that word rarity differs depending on time period)
+-   Uses relatively uncommon words more often (keeping in mind that word rarity differs depending on time period)
 
-- Uses longer sentences
+-   Uses longer sentences
 
-- Uses more complex grammar structure (e.g., multiple clauses, subordinate clauses - "this may also take the form of greater reliance on particular parts of speech, such as nouns or adjectives")
+-   Uses more complex grammar structure (e.g., multiple clauses, subordinate clauses - "this may also take the form of greater reliance on particular parts of speech, such as nouns or adjectives")
 
 ```{r}
 #| warning: false
@@ -297,16 +302,9 @@ BT1 <- BT_unstruc_brT
 
 BT2 <- BT_unstruc_brF
 
-```
-
-```{r}
-#| warning: false
-#| output: asis
-#| code-fold: false
-
 # baseline "ability" (easiness) as estimated from Bradley-Terry model
 BTabilities(BT1) %>%
-  head(3) %>%
+  head(10) %>%
   datatable()
 
 ```
@@ -346,59 +344,14 @@ X <- dat$predictors[m, terms]
 mod_bias_reduced <- randomForest(X, y = yy, ntree = 1000)
 
 # display feature importance
-round(importance(mod_bias_reduced), 2)
+import_bias_reduced = round(importance(mod_bias_reduced), 2)
+import_bias_reduced = import_bias_reduced[order(import_bias_reduced[,1],decreasing=TRUE),drop=FALSE,]
+
+import_bias_reduced
 
 ```
 
-**Biased Reduced = False** 
-**BT Model with all features**
-
-```{r}
-#| warning: false
-#| output: asis
-#| code-fold: false
-
-# Y target feature: text easiness ("ability")
-y2 <- BTabilities(BT2)[, "ability"]
-
-# remove NAs
-yy2 <- y2[!is.na(y2)]
-
-# return row number, match left to right 
-mm <- match(names(yy2), rownames(dat$predictors))
-
-# X features for random forest
-# instead of having a selected features, we use all features
-X2 <- dat$predictors[mm, terms]
-
-# run random forest for non-bias-reduced model
-mod_non_bias_reduced <- randomForest(X2, y = yy2, ntree = 1000)
-
-# display feature importance
-round(importance(mod_non_bias_reduced), 2)
-
-```
-
-### Make Co-variate for the requested text
-
-```{r}
-#| warning: false
-#| output: asis
-#| code-fold: false
-
-# sotu addresses
-data(data_corpus_sotu, package = "quanteda.corpora")
-
-x1 <- covars_make(data_corpus_sotu)
-x2 <- covars_make_pos(data_corpus_sotu)
-x3 <- covars_make_baselines(data_corpus_sotu, 
-                            baseline_year = lubridate::year(docvars(data_corpus_sotu, "Date")))
-
-sotu_covars <- cbind(x1, x2, x3)
-
-```
-
-#### Fit 4 main models
+### Step 5. Fit 4 main structured Bradley-Terry models 
 
 ```{r}
 #| warning: false
@@ -436,7 +389,7 @@ model_results <- list(BT_basic_Flesch = BT_basic_Flesch,
 
 ```
 
-#### Create table 2
+### Step 6. Create table 2
 
 ```{r}
 #| warning: false
@@ -470,7 +423,7 @@ msummary(models,
 
 ```
 
-#### Create table 3
+### Step 7. Create table 3
 
 ```{r}
 #| warning: false
@@ -491,7 +444,7 @@ row.names(tab3) <- tab3[, "_docid"]
 tab3 <- tab3[, c("google_min", "meanSentenceChars", "pr_noun", "meanWordChars")]
 tab3 <- t(tab3)
 tab3[1, , drop = FALSE]
-round(tab2[2:4, ], 2)
+round(tab3[2:4, ], 2)
 
 # ---- lambdas computed with precision
 prd <- predict_readability(BT_best, corp_example)
@@ -508,9 +461,47 @@ exp(tab3lambdas[1, "Clinton_1999"]) /
 
 ```
 
-#### Generate SOTU paragraphs
+### Step 8. Generate figure 1
 
 ```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# get FRE scores for the snippets
+dat <- job999866covars_chameleons
+FRE <- dat$predictors$Flesch
+
+names(FRE) <- rownames(dat$predictors)
+
+# get lambdas from BMS best fitting model
+main_lambdas <- BTabilities(BT_best)[,"ability"]
+
+# rescale lambdas to the 0-100 space correctly
+rescaled_lambdas <- 226.06927 + 57.93899 * main_lambdas
+
+# check that they are matched up
+m <- match(names(FRE), names(rescaled_lambdas)) ## they are matched up
+
+ggplot(data.frame(FRE = FRE, rslambda = rescaled_lambdas), aes(x = FRE, y = rslambda)) +
+    geom_point(size = .6) +
+    labs(y = "Rescaled Best BT Model") +
+    geom_smooth(method = "lm", se = TRUE) +
+    geom_hline(yintercept = c(0, 100), linetype = "dashed", color = "firebrick") +
+    theme(axis.text.x = element_text(size = 5),
+          axis.text.y = element_text(size = 5)) +
+    theme_classic()
+
+```
+
+## Part B. Apply trained model to SOTU data to assess text complexity
+
+### Step 1. Generate SOTU paragraphs
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
 
 data(data_corpus_sotu, package = "quanteda.corpora")
 
@@ -566,85 +557,59 @@ names(rdblty_local) <- paste(names(rdblty_local), "local", sep = "_")
 docvars(data_corpus_sotuparagraphs) <- 
     cbind(docvars(data_corpus_sotuparagraphs), rdblty_2000, rdblty_local)
 
+```
 
+### Step 2. Generate figure 2
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# data_corpus_sotuclean <- data_corpus_sotuparagraphs %>%
+#     corpus_reshape(to = "documents") %>%
+#     corpus_subset(!grepl("(1945|1956|1972|1978|1979|1980)b", docnames(.)))
+# 
+# docvars(data_corpus_sotuclean, "year") <- lubridate::year(docvars(data_corpus_sotuclean, "Date"))
+# 
+# lamba5thgrade <-
+#     predict_readability(BT_best, newdata = corpus_group(data_corpus_fifthgrade, groups = rep(1, ndoc(data_corpus_fifthgrade))))[, "lambda"]
+# 
+# predrd <- predict_readability(BT_best, newdata = data_corpus_sotuclean,
+#                               reference_top = lamba5thgrade,
+#                               baseline_year = docvars(data_corpus_sotuclean, "year"),
+#                               bootstrap_n = 100)
+# 
+# # add the results to the corpus docvars
+# docvars(data_corpus_sotuclean, names(predrd)) <- predrd
+# 
+# # compute FRE ratio to 5th grade texts
+# docvars(data_corpus_sotuclean, "FREv5thgrade") <-
+#     0.5 *
+#     textstat_readability(data_corpus_sotuclean, "Flesch")[["Flesch"]] /
+#     textstat_readability(corpus_group(data_corpus_fifthgrade,
+#                                groups = rep(1, ndoc(data_corpus_fifthgrade))), "Flesch")[["Flesch"]]
+# 
+# ggplot(data = docvars(data_corpus_sotuclean)) +
+#     xlab("") +
+#     ylab("Probability that SOTU is Easier than a 5th Grade Text") +
+#     geom_point(aes(x = year, y = prob), size = 1.5, color = "black", shape = 16) +
+#     geom_errorbar(aes(ymin = prob_lo, ymax = prob_hi, x = year), width = 0.25) +
+#     geom_smooth(aes(x = year, y = prob), span = .15, color = "blue") +
+#     geom_hline(yintercept = 0.50, linetype = "dashed", color = "firebrick") +
+#     theme(legend.position = c(1820, 0.4),
+#           axis.text.x = element_text(size = 5),
+#           axis.text.y = element_text(size = 5)) +
+#     theme_classic()
 
 ```
 
-#### Generate figure 1
+### Step 3. Generate figure 3
 
 ```{r}
-
-# get FRE scores for the snippets
-dat <- job999866covars_chameleons
-FRE <- dat$predictors$Flesch
-
-names(FRE) <- rownames(dat$predictors)
-
-# get lambdas from BMS best fitting model
-main_lambdas <- BTabilities(BT_best)[,"ability"]
-
-# rescale lambdas to the 0-100 space correctly
-rescaled_lambdas <- 226.06927 + 57.93899 * main_lambdas
-
-# check that they are matched up
-m <- match(names(FRE), names(rescaled_lambdas)) ## they are matched up
-
-ggplot(data.frame(FRE = FRE, rslambda = rescaled_lambdas), aes(x = FRE, y = rslambda)) +
-    geom_point(size = .6) +
-    labs(y = "Rescaled Best BT Model") +
-    geom_smooth(method = "lm", se = TRUE) +
-    geom_hline(yintercept = c(0, 100), linetype = "dashed", color = "firebrick") +
-    theme(axis.text.x = element_text(size = 5),
-          axis.text.y = element_text(size = 5)) +
-    theme_classic()
-
-```
-
-#### Generate figure 2
-
-```{r}
-
-data_corpus_sotuclean <- data_corpus_sotuparagraphs %>%
-    corpus_reshape(to = "documents") %>%
-    corpus_subset(!grepl("(1945|1956|1972|1978|1979|1980)b", docnames(.))) 
-
-docvars(data_corpus_sotuclean, "year") <- lubridate::year(docvars(data_corpus_sotuclean, "Date"))
-
-lamba5thgrade <- 
-    predict_readability(BT_best, newdata = texts(data_corpus_fifthgrade, groups = rep(1, ndoc(data_corpus_fifthgrade))))[, "lambda"]
-
-predrd <- predict_readability(BT_best, newdata = data_corpus_sotuclean, 
-                              reference_top = lamba5thgrade,
-                              baseline_year = docvars(data_corpus_sotuclean, "year"), 
-                              bootstrap_n = 100)
-
-# add the results to the corpus docvars
-docvars(data_corpus_sotuclean, names(predrd)) <- predrd
-
-# compute FRE ratio to 5th grade texts
-docvars(data_corpus_sotuclean, "FREv5thgrade") <- 
-    0.5 * 
-    textstat_readability(data_corpus_sotuclean, "Flesch")[["Flesch"]] /
-    textstat_readability(texts(data_corpus_fifthgrade, 
-                               groups = rep(1, ndoc(data_corpus_fifthgrade))), "Flesch")[["Flesch"]]
-
-ggplot(data = docvars(data_corpus_sotuclean)) +
-    xlab("") +
-    ylab("Probability that SOTU is Easier than a 5th Grade Text") +
-    geom_point(aes(x = year, y = prob), size = 1.5, color = "black", shape = 16) +
-    geom_errorbar(aes(ymin = prob_lo, ymax = prob_hi, x = year), width = 0.25) +
-    geom_smooth(aes(x = year, y = prob), span = .15, color = "blue") +
-    geom_hline(yintercept = 0.50, linetype = "dashed", color = "firebrick") +
-    theme(legend.position = c(1820, 0.4),
-          axis.text.x = element_text(size = 5),
-          axis.text.y = element_text(size = 5)) +
-    theme_classic()
-
-```
-
-#### Generate figure 3
-
-```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
 
 data_corpus_sotucompare <- data_corpus_sotuparagraphs %>%
     corpus_reshape(to = "documents") %>%
