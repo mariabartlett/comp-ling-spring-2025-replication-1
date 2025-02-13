@@ -2,7 +2,7 @@
 
 ## Description
 
-This repository includes materials to replicate key findings from Benoit, Kenneth, Kevin Munger, and Arthur Spirling. 2019. “Measuring and Explaining Political Sophistication through Textual Complexity.” _American Journal of Political Science_ 63 (2): 491–508.doi: 10.1111/ajps.12423. It includes links to the original paper and authors' replication materials, our replication materials, and our findings presentation and report.
+This repository includes materials to replicate key findings from **Benoit, Kenneth, Kevin Munger, and Arthur Spirling. 2019. “Measuring and Explaining Political Sophistication through Textual Complexity.” _American Journal of Political Science_ 63 (2): 491–508.doi: 10.1111/ajps.12423.** It includes links to the original paper and authors' replication materials, our replication materials, and our findings presentation and report.
 
 ## Paper Research Goals
 
