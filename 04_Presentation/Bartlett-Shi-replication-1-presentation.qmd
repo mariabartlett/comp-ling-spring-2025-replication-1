@@ -6,6 +6,7 @@ date: "February 11, 2025"
 format:
   revealjs: 
     theme: bootstrap.scss
+    embed-resources: true
 editor: visual
 ---
 
@@ -71,7 +72,7 @@ $$
   
   - **No natural ability to make comparisons:** FRE score units do not carry inherent meaning and there is no mechanism to convert scores into probabilities 
 
-## Roadmap of Authors' Goals {.smaller}
+## Roadmap of authors' goals {.smaller}
 
 **These questions lead the authors to two main goals:**
 
@@ -81,35 +82,9 @@ $$
 
 **Key connections to our coursework:**
 
-1. Re-thinking measures of textual ease
+1. Measures of textual ease
 
-2. Employment of supervised learning models in textual analysis
-
-## Roadmap of Authors' Goals {.smaller}
-
-**Components of goal 1 (Re-explore determinants of textual sophistication, specifically in a political context)**:
-
-- Construct a corpus of political texts (level = snippets)
-
-- Employ **human coders** to analyze snippets and make determinations of textual easiness [(outcome variable)]{style="color: #FFC107"}
-
-- Calculate a range of statistics for corpus snippets (e.g., How long is the text? How many nouns? What is the easiness using FRE?) [(covariates)]{style="color: #FFC107"}
-
-- Fit a machine learning model using outcome and covariates to identify which covariates are most predictive of text ease
-
-## Roadmap of Authors' Goals {.smaller}
-
-**Components of goal 2 (Develop a model for political textual complexity that can be applied to any political text)**:
-
-- Run Bradley-Terry model using multiple model specifications (e.g., using covariates as specified from machine learning feature selection)
-
-- Choose best-performing model
-
-- Run this model on any political science text to assess (with mechanisms for uncertainty):
-
-  - Between two texts, which is easier
-
-  - Easiness as compared to a benchmark
+2. Supervised learning models in textual analysis
 
 # Methods
 
@@ -145,7 +120,7 @@ $$
 "We also show compassion abroad because regions overwhelmed by poverty, corruption, and despair are sources of terrorism and organized crime and human trafficking and the drug trade.  In recent years, you and I have taken unprecedented action to fight AIDS and malaria, expand the education of girls, and reward developing nations that are moving forward with economic and political reform." -- Bush 2006
 ```
 
-## Bradley-Terry Model {.smaller}
+## Bradley-Terry model {.smaller}
 
 - Model is designed for pairwise comparison (traditionally used to measure "ability")
 
@@ -160,6 +135,10 @@ Logit\ [Pr(i\ easier\ than\ j)] = \lambda_i - \lambda_j \\
 = log (\frac{a_i}{a_j})
 $$
 
+ - Between two texts, which is easier
+
+ - Easiness as compared to a benchmark
+  
 ## Model covariates {.smaller}
 
 Authors assume that a complex text uses:
@@ -215,7 +194,7 @@ job999866covars_chameleons <-
 
 ```
 
-## Snapshot: Data at this point in time {.smaller}
+## Snapshot: Data at this point in time 
 
 ```{r}
 #| warning: false
@@ -335,7 +314,7 @@ covars_data %>%
 
 ```
 
-## Random Forest for Feature Selection {.smaller}
+## Random forest for feature selection {.smaller}
 
 - Authors run random forest model (1,000 trees) to identify covariates most predictive of text ease
 
@@ -347,7 +326,7 @@ covars_data %>%
   
   - **Long Sentences:** `meanSentenceChars`
   
-  - **Complex Content:** `pr_noun`
+  - **Complex Structure:** `pr_noun`
 
 ## Run 4 model specifications {.smaller}
 
@@ -386,13 +365,22 @@ BT_best <- BTm(player1 = easier, player2 = harder,
 
 - $\hat\beta$s from model 4 are used to construct $\hat\lambda$ probabilities that a text is easier relative to another
 
+```{css, echo=FALSE}
+.scrollable {
+  overflow-y: auto;
+  height: 90vh;
+}
+```
+
+:::{.scrollable}
+
 ## Best model {.smaller}
 
 ```{r}
 #| warning: false
 #| output: asis
 #| echo: false
-#| eval: false
+#| eval: true
 
 # load packages
 library(tidyverse)
@@ -442,8 +430,8 @@ model_results <- list(BT_basic_Flesch = BT_basic_Flesch,
 # put models in a list
 models <- list("FRE Baseline"   = BT_basic_Flesch,
                "FRE Reweight"   = BT_optimal_Flesch,
-               "Basic RF Model" = BT_basic_RF,
-               "Best Model"     = BT_best)
+               "RF Basic \nCovariates" = BT_basic_RF,
+               "RF Full \nCovariates"     = BT_best)
 
 fmt <- list(
        list("raw" = "nobs", "clean" = "N", "fmt" = 0),
@@ -453,7 +441,6 @@ fmt <- list(
 # produce LaTeX table
 msummary(models,
          escape = FALSE,
-         title = "Table 2. Comparing the Performance of the Structured Models",
          coef_rename = c("Flesch[ID]"               = "FRE",
                         "meanSentenceLength[ID]"    = "meanSentenceLength",
                         "meanWordSyllables[ID]"     = "meanWordSyllables",
@@ -463,20 +450,41 @@ msummary(models,
                         "meanWordChars[ID]"         = "meanWordChars"))
 ```
 
+:::
+
 ## Validation: Comparing to FRE {.smaller}
 
 ```{r, echo = FALSE}
-library(png)
-library(grid)
 
-img <- readPNG("fig1.png")
-grid.raster(img)
+# get FRE scores for the snippets
+dat <- job999866covars_chameleons
+FRE <- dat$predictors$Flesch
+
+names(FRE) <- rownames(dat$predictors)
+
+# get lambdas from BMS best fitting model
+main_lambdas <- BTabilities(BT_best)[,"ability"]
+
+# rescale lambdas to the 0-100 space correctly
+rescaled_lambdas <- 226.06927 + 57.93899 * main_lambdas
+
+# check that they are matched up
+m <- match(names(FRE), names(rescaled_lambdas)) ## they are matched up
+
+ggplot(data.frame(FRE = FRE, rslambda = rescaled_lambdas), aes(x = FRE, y = rslambda)) +
+    geom_point(size = .6) +
+    labs(y = "Rescaled Best BT Model") +
+    geom_smooth(method = "lm", se = TRUE) +
+    geom_hline(yintercept = c(0, 100), linetype = "dashed", color = "firebrick") +
+    theme(axis.text.x = element_text(size = 5),
+          axis.text.y = element_text(size = 5)) +
+    theme_classic()
 
 ```
 
-# Autopsy
+# Autopsy/Differences
 
-## Autopsy {.smaller}
+## Autopsy/Differences {.smaller}
 
 - Able to replicate feature selection results, model results, and key plots
 
