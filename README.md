@@ -2,7 +2,11 @@
 
 ## Description
 
+This repository includes materials to replicate key findings from Benoit, Kenneth, Kevin Munger, and Arthur Spirling. 2019. “Measuring and Explaining Political Sophistication through Textual Complexity.” _American Journal of Political Science_ 63 (2): 491–508.doi: 10.1111/ajps.12423. It includes links to the original paper and authors' replication materials, our replication materials, and our findings presentation and report.
+
 ## Paper Research Goals
+
+Benoit, Munger, and Spirling (2019) have two main goals in their paper:
 
 1. Re-explore determinants of textual sophistication, specifically in a political context
 2. Develop a model for political textual complexity that can be applied to any political text
@@ -78,6 +82,8 @@
 
 
 ## Code
+
+All file path references in the QMD and RMD scripts in this repository assume that the user has cloned this repo and thus is using our same folder structure. The file path references also assumes that the user has downloaded the 33 replication files available on the Harvard Dataverse and unpacked the files directly into `02_DataverseMaterials/dataverse_files`. 
 
 ## Authors
 
