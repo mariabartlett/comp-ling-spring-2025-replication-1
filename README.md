@@ -61,7 +61,7 @@ Maria Bartlett & Wendy Shi
 
 ## Course & Institutional Information
 
-This project was produced as part of the spring 2025 **PPOL 6801: Text as Data: Computational Linguistics** course at **McCourt School of Public Policy at Georgetown University**.
+This project was produced as part of the spring 2025 **PPOL 6801: Text as Data: Computational Linguistics** course at **McCourt School of Public Policy** at **Georgetown University**.
 
 ## References
 
