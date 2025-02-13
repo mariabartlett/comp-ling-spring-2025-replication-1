@@ -61,7 +61,7 @@
 		</tr>
 		<tr>
         		</td><td><tt>table1.png</tt></td>
-			<td>PNG file with list of covariates screen-captured from Benoit et al., 2019 original paper</td>
+			<td>PNG file with list of covariates screen-captured from Benoit et al., 2019 original paper (called in <tt>Bartlett-Shi-replication-1-presentation.qmd</tt>)</td>
 		</tr>
   		<tr>
         		<td rowspan="2"><tt>05_Paper</tt></td>
