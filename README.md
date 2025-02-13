@@ -1,7 +1,10 @@
 # A Replication of _Measuring and Explaining Political Sophistication through Textual Complexity_ (Benoit et al., 2019)
 
-### PPOL 6801: Text as Data: Computational Linguistics
-### Spring 2025
+**PPOL 6801: Text as Data: Computational Linguistics**
+
+**McCourt School of Public Policy, Georgetown University**
+
+**Spring 2025**
 
 ## Description
 
@@ -13,13 +16,49 @@
 	
 ## Repository Structure
 
-| Folder | Folder Description | Included File  | File Description | 
-| ------- | --- | --- | --- |
-| `01_OriginalPaper` | | |
-| `02_DataverseMaterials/dataverse_files` | | |
-| `03_Replication` | | |
-| `04_Presentation` | | |
-| `05_Paper` | | |
+<table>
+	<thead>
+    		<tr>
+	      		<th>Folder</th>
+	      		<th>Folder Description</th>
+			<th>Included File</th>
+			<th>File Description</th>
+    		</tr>
+  	</thead>
+  	<tbody>
+    		<tr>
+        		<td>`01_OriginalPaper`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+    		</tr>
+		<tr>
+        		<td>`02_DataverseMaterials/dataverse_files`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+    		</tr>
+    		<tr>
+        		<td rowspan="3">`03_Replication`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+    		</tr>
+    		<tr>
+        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+		</tr>
+		<tr>
+        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+		</tr>
+  		<tr>
+        		<td rowspan="3">`04_Presentation`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+    		</tr>
+    		<tr>
+        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+		</tr>
+		<tr>
+        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+		</tr>
+  		<tr>
+        		<td rowspan="2">`05_Paper`</td><td>XX</td><td>readme.txt</td><td>XX</td>
+    		</tr>
+    		<tr>
+        		</td><td>XX</td><td>readme.txt</td><td>XX</td>
+		</tr>
+
+</table>
+
 
 ## Reproducing code
 
