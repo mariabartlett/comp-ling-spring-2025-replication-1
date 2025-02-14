@@ -20,94 +20,95 @@ set.seed(12345)
 
 # load packages
 library(tidyverse)
+library(png)
+library(grid)
+library(spacyr)
+library(sophistication)  
+library(BradleyTerry2)
+library(modelsummary)
+library(quanteda)
+library(quanteda.textstats)
+library(assertr)
+library(randomForest) 
+library(kableExtra)
 
 # set relative paths
-#root <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/03_ProblemSets/01_PS1"
-
-# define kable styling options
-kable_style <- function(df) {
-  
-  df %>%
-  kbl(full_width = T, 
-      align = "l",
-      booktabs = T) %>%
-  kable_styling(latex_options = c("repeat_header","scale_down","HOLD_position")) 
-}
+root       <- file.path(getwd() %>% dirname())
+author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
 
 ```
 
-# Introduction 
+# Introduction
 
 ## Background {.smaller}
 
-Authors seek to contribute to a key gap in literature: **How to empirically measure the sophistication of [_political_]{style="color: #FFC107"} texts?**
+Authors seek to contribute to a key gap in literature: **How to empirically measure the sophistication of [*political*]{style="color: #FFC107"} texts?**
 
-- _Why is sophistication important to measure?_
+-   *Why is sophistication important to measure?*
 
-  - Concern that political communication is becoming too simplistic
+    -   Concern that political communication is becoming too simplistic
 
-  - Interest in studying potential causality between textual clarity and social science outcomes (e.g., levels of voter awareness)
+    -   Interest in studying potential causality between textual clarity and social science outcomes (e.g., levels of voter awareness)
 
-- _What measures already exist?_
+-   *What measures already exist?*
 
-  - Many measures emerged from [_educational and psychology research_]{style="color: #FFC107"}, most popularly the [**Flesch Reading Ease (FRE)** score]{style="color: #FFC107"} (0-121 scale)
-  
-  - Nevertheless, these measures have been used in a range of research, including in political text analysis
+    -   Many measures emerged from [*educational and psychology research*]{style="color: #FFC107"}, most popularly the [**Flesch Reading Ease (FRE)** score]{style="color: #FFC107"} (0-121 scale)
+
+    -   Nevertheless, these measures have been used in a range of research, including in political text analysis
 
 $$
 \small
 FRE = 206.835 - 1.015(\frac{total\ number\ of\ words}{total\ number\ of\ sentences}) \small - 84.6(\frac{total\ number\ of\ syllables}{total\ number\ of\ words})
 $$
 
-
 ## Background {.smaller}
 
-- _What are the issues with using FRE and similar measures in political science research?_
+-   *What are the issues with using FRE and similar measures in political science research?*
 
-  - **Not domain-specific:** Developed in 1948 to assess U.S. student reading proficiency
-  
-  - **Strong assumptions of what composes textual sophistication:** For example, FRE formula does not directly include a measure for frequently- vs. rarely-used words
+    -   **Not domain-specific:** Developed in 1948 to assess U.S. student reading proficiency
 
-  - **No uncertainty mechanism:** Not feasible to construct standard errors for estimates
-  
-  - **No natural ability to make comparisons:** FRE score units do not carry inherent meaning and there is no mechanism to convert scores into probabilities 
+    -   **Strong assumptions of what composes textual sophistication:** For example, FRE formula does not directly include a measure for frequently- vs. rarely-used words
+
+    -   **No uncertainty mechanism:** Not feasible to construct standard errors for estimates
+
+    -   **No natural ability to make comparisons:** FRE score units do not carry inherent meaning and there is no mechanism to convert scores into probabilities
 
 ## Roadmap of authors' goals {.smaller}
 
 **These questions lead the authors to two main goals:**
 
-1. Re-explore determinants of textual sophistication, specifically in a political context
+1.  Re-explore determinants of textual sophistication, specifically in a political context
 
-2. Develop a model for political textual complexity that can be applied to any political text
+2.  Develop a model for political textual complexity that can be applied to any political text
 
 **Key connections to our coursework:**
 
-1. Measures of textual ease
+1.  Measures of textual ease
 
-2. Supervised learning models in textual analysis
+2.  Supervised learning models in textual analysis
 
 # Methods
 
 ## Data {.smaller}
 
-- Corpus: 70 State of the Union (SOTU) speeches post-1950
+-   Corpus: 70 State of the Union (SOTU) speeches post-1950
 
-- Divided into "snippets" 
+-   Divided into "snippets"
 
-- Given two snippets, manual coders determine "easier" snippet (no ties!):
+-   Given two snippets, manual coders determine "easier" snippet (no ties!):
 
-  -   Pairwise comparisons of snippets of similar length
-  
-  -   At least 3 coders per pair
+    -   Pairwise comparisons of snippets of similar length
 
-  -   No snippet appears in isolation, thus make comparison between all pairs possible.
+    -   At least 3 coders per pair
 
-  -   7,236 total pairings for comparison (836 gold questions and 310 screeners to test coder fidelity/attention)
+    -   No snippet appears in isolation, thus make comparison between all pairs possible.
+
+    -   7,236 total pairings for comparison (836 gold questions and 310 screeners to test coder fidelity/attention)
 
 -   **Grand total of 19,810 comparisons**
-  
+
 ## Sample of a text comparison
-  
+
 **Text 1:**
 
 ```         
@@ -122,23 +123,23 @@ $$
 
 ## Bradley-Terry model {.smaller}
 
-- Model is designed for pairwise comparison (traditionally used to measure "ability")
+-   Model is designed for pairwise comparison (traditionally used to measure "ability")
 
-- Authors leverage Bradley-Terry design to compute easiness $(a_i)$ of a text
+-   Authors leverage Bradley-Terry design to compute easiness $(a_i)$ of a text
 
-- If the easiness of snippet $i$ s easier than the snippet $j$, the possibility of $i$ easier than $j$ is $a_i/a_j$
+-   If the easiness of snippet $i$ s easier than the snippet $j$, the possibility of $i$ easier than $j$ is $a_i/a_j$
 
-- Define $\lambda_i = log\ a_i$
+-   Define $\lambda_i = log\ a_i$
 
 $$
 Logit\ [Pr(i\ easier\ than\ j)] = \lambda_i - \lambda_j \\
 = log (\frac{a_i}{a_j})
 $$
 
- - Between two texts, which is easier
+-   Between two texts, which is easier
 
- - Easiness as compared to a benchmark
-  
+-   Easiness as compared to a benchmark
+
 ## Model covariates {.smaller}
 
 Authors assume that a complex text uses:
@@ -154,8 +155,6 @@ Authors assume that a complex text uses:
 ## Complete list of potential covariates {.smaller}
 
 ```{r, echo = FALSE}
-library(png)
-library(grid)
 
 img <- readPNG("table1.png")
 grid.raster(img)
@@ -194,40 +193,13 @@ job999866covars_chameleons <-
 
 ```
 
-## Snapshot: Data at this point in time 
+## Snapshot: Data at this point in time
 
 ```{r}
 #| warning: false
 #| output: asis
 #| echo: false
 #| eval: true
-
-# set seed
-set.seed(12345)
-
-# provide instruction for how to install user-written packages
-#devtools::install_github("quanteda/spacyr", build_vignettes = FALSE)
-#library(spacyr)
-#spacy_install()
-#spacy_initialize()
-#devtools::install_github("kbenoit/sophistication")
-
-# load packages
-library(tidyverse)
-library(spacyr)
-library(sophistication)  
-library(BradleyTerry2)
-library(modelsummary)
-library(quanteda)
-library(quanteda.textstats)
-library(assertr)
-library(DT)
-library(randomForest) 
-library(kableExtra)
-
-# set root path to working directory
-root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
-author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
 
 # load human-coded data of SOTU passages from CrowdFlower
 allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), stringsAsFactors = FALSE),
@@ -236,72 +208,84 @@ allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), st
   verify(anyDuplicated(select(.,c(X_id))) == 0) %>%
   # check dimensions of data
   verify(nrow(.) == 27807 & ncol(.) == 25) %>%
-  # confirm all tainted responses have been removed
+  # confirm all tainted responses have been removed, per codebook
   verify(X_tainted == "false")
-
-# CrowdFlower data contains 3,322 text snippets derived from 226 SOTU speeches
-stopifnot(length(unique(c(allsentences$snippetid1,allsentences$snippetid2))) == 3322)
-stopifnot(length(unique(c(allsentences$docid1,allsentences$docid2))) == 226)
 
 # add covariates to prepare data for BT Model
 job999866covars_chameleons <-
     bt_input_make(allsentences, 
                   # add covariates for each snippet, taken directly from Crowdflower saved data
                   covars = TRUE,
-                  # specify measures text difficulty
+                  # specify measures of text difficulty
                   readability_measure = c("Flesch", 
                                           "Dale.Chall",
                                           "FOG", 
                                           "SMOG",
                                           "Spache",
                                           "Coleman.Liau"),
-                  # add summary baseline frequencies compared to Google and Brown corpora speech
-                  # computed by covars_make_pos()
+                  # measures of word rarity (Google and Brown)
                   covars_baseline = TRUE, 
-                  # add frequencies of parts of speech computed by covars_make_pos()
+                  # measures of parts of speech
                   covars_pos = TRUE, 
-                  # return appropriately normalized covariates (including parts of speech if applicable)
+                  # normalize covariates
                   normalize = TRUE)
 
-# merge data to be sure we understand how data is working
+# extract dataframe with covariates
 pred_data <- job999866covars_chameleons$predictors %>%
   mutate(easier_id = row.names(.),
          harder_id = row.names(.))
 
+# extract snippet 1 from each comparison
 snippet_data1 <- allsentences %>%
   select(snippetid1,text1) %>%
   rename(snippetid = snippetid1,
          text      = text1) %>%
   distinct()
 
+# extract snippet 2 from each comparison
 snippet_data2 <- allsentences %>%
   select(snippetid2,text2) %>%
   rename(snippetid = snippetid2,
          text      = text2) %>%
   distinct()
 
+# stack both sets of snippets and de-duplicate
 snippet_data <- bind_rows(snippet_data1,snippet_data2) %>%
   distinct() %>%
   mutate(snippetid = as.character(snippetid))
 
+# examine raw text snippet pairs alongside their corresponding covariates to ensure 
+# we fully understand how covariate generation occurs
+# --------------------------------------------------------------------------------
+# extract 'easier' data
 covars_data <- job999866covars_chameleons$easier %>%
   rename(easier_id = ID) %>%
+  # merge with 'harder' data
   bind_cols(.,job999866covars_chameleons$harder) %>%
   rename(harder_id = ID) %>%
+  # confirm number of rows has remained the same
   verify(nrow(.) == 19430) %>%
+  # join m:1 with covariates for 'easier' snippet
   left_join(pred_data, by = "easier_id", relationship = "many-to-one") %>%
+  # prefix all covariates with 'easier_' to specify these are covariates for 'easier' snippet
   rename_with(~ paste0("easier_", .), -c(harder_id.x,harder_id.y,easier_id)) %>%
   select(-harder_id.y) %>%
   rename(harder_id = harder_id.x) %>%
+  # join m:1 with covariates for 'harder' snippet
   left_join(pred_data, by = "harder_id", relationship = "many-to-one") %>%
+  # prefix all covariates with 'harder_' to specify these are covariates corresponding to 'harder' snippet
   rename_with(~ paste0("harder_", .), -c(starts_with("harder"),starts_with("easier"))) %>%
   select(-easier_id.y) %>%
   rename(easier_id = easier_id.x) %>%
+  # merge on full text for easier snippets
   left_join(snippet_data, by = c("easier_id" = "snippetid")) %>%
   rename(easier_text = text) %>%
+  # merge on full text for harder snippets
   left_join(snippet_data, by = c("harder_id" = "snippetid")) %>%
   rename(harder_text = text) %>%
+  # confirm all snippets matched with their corresponding text
   verify(!is.na(easier_text) & !is.na(harder_text)) %>%
+  # move text extracts up to front of file
   relocate(easier_text, .after = easier_id) %>%
   relocate(harder_text, .after = harder_id) 
 
@@ -316,17 +300,17 @@ covars_data %>%
 
 ## Random forest for feature selection {.smaller}
 
-- Authors run random forest model (1,000 trees) to identify covariates most predictive of text ease
+-   Authors run random forest model (1,000 trees) to identify covariates most predictive of text ease
 
-- Based on node purity scores from random forest model, authors choose one covariate from each of their four categories of textual complexity:
+-   Based on node purity scores from random forest model, authors choose one covariate from each of their four categories of textual complexity:
 
-  - **Long Words:** `meanWordSyllables`
-  
-  - **Rare Words:** `google_min`
-  
-  - **Long Sentences:** `meanSentenceChars`
-  
-  - **Complex Structure:** `pr_noun`
+    -   **Long Words:** `meanWordSyllables`
+
+    -   **Rare Words:** `google_min`
+
+    -   **Long Sentences:** `meanSentenceChars`
+
+    -   **Complex Structure:** `pr_noun`
 
 ## Run 4 model specifications {.smaller}
 
@@ -359,11 +343,11 @@ BT_best <- BTm(player1 = easier, player2 = harder,
 
 **Model 4** (controlling for all four covariates from feature selection) performs best in terms of:
 
-- Lowest Akaike information criterion (AIC)
+-   Lowest Akaike information criterion (AIC)
 
-- Highest proportion of comparisons accurately predicted
+-   Highest proportion of comparisons accurately predicted
 
-- $\hat\beta$s from model 4 are used to construct $\hat\lambda$ probabilities that a text is easier relative to another
+-   $\hat\beta$s from model 4 are used to construct $\hat\lambda$ probabilities that a text is easier relative to another
 
 ```{css, echo=FALSE}
 .scrollable {
@@ -372,8 +356,7 @@ BT_best <- BTm(player1 = easier, player2 = harder,
 }
 ```
 
-:::{.scrollable}
-
+::: scrollable
 ## Best model {.smaller}
 
 ```{r}
@@ -382,41 +365,25 @@ BT_best <- BTm(player1 = easier, player2 = harder,
 #| echo: false
 #| eval: true
 
-# load packages
-library(tidyverse)
-library(spacyr)
-library(sophistication)  
-library(BradleyTerry2)
-library(modelsummary)
-library(quanteda)
-library(quanteda.textstats)
-library(assertr)
-library(DT)
-library(randomForest) 
-
-# set root path to working directory
-root       <- "C:/Users/mbart/OneDrive/Documents/Georgetown/04-Spring-2025/03-Computational-Linguistics/04_Replications"
-author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
-
-# load workspace authors used
+# load respective author workspace
 load(file.path(author_rep,"job999866covars_chameleons.rda"))
 
-# run baseline Flesch model
+# Bradley-Terry 1: control only for baseline FRE score
 BT_basic_Flesch <- BTm(player1 = easier, player2 = harder,
                        formula = ~ Flesch[ID], id = "ID",
                        data = job999866covars_chameleons)
 
-# run optimal Flesch model
+# Bradley-Terry 2: control for FRE components (sentence length, word syllables), allowing for reweighting
 BT_optimal_Flesch <- BTm(player1 = easier, player2 = harder, 
                          formula = ~ meanSentenceLength[ID] + meanWordSyllables[ID], 
                          id = "ID", data = job999866covars_chameleons)
 
-# run basic random forest model
+# Bradley-Terry 3: control for 3 of 4 top covariates identified from random forest feature selection
 BT_basic_RF <- BTm(player1 = easier, player2 = harder, 
                    formula = ~ google_min_2000[ID] + meanSentenceChars[ID] + pr_noun[ID], 
                    id ="ID", data = job999866covars_chameleons)
 
-# run best model
+# Bradley-Terry 4: control for 4 top covariates identified from random forest feature selection
 BT_best <- BTm(player1 = easier, player2 = harder, 
                formula = ~ google_min_2000[ID] +  meanSentenceChars[ID] + pr_noun[ID] + meanWordChars[ID], 
                id = "ID", data = job999866covars_chameleons)
@@ -426,30 +393,7 @@ model_results <- list(BT_basic_Flesch = BT_basic_Flesch,
                       BT_basic_RF = BT_basic_RF, 
                       BT_optimal_Flesch = BT_optimal_Flesch, 
                       BT_best = BT_best)
-
-# put models in a list
-models <- list("FRE Baseline"   = BT_basic_Flesch,
-               "FRE Reweight"   = BT_optimal_Flesch,
-               "RF Basic \nCovariates" = BT_basic_RF,
-               "RF Full \nCovariates"     = BT_best)
-
-fmt <- list(
-       list("raw" = "nobs", "clean" = "N", "fmt" = 0),
-       list("raw" = "adj.r.squared", "clean" = "Adjusted $R^2$", "fmt" = 2),
-       list("raw" = "rmse", "clean" = "$\\sigma$", "fmt" = 2))
-
-# produce LaTeX table
-msummary(models,
-         escape = FALSE,
-         coef_rename = c("Flesch[ID]"               = "FRE",
-                        "meanSentenceLength[ID]"    = "meanSentenceLength",
-                        "meanWordSyllables[ID]"     = "meanWordSyllables",
-                        "google_min_2000[ID]"       = "google_min",
-                        "meanSentenceChars[ID]"     = "meanSentenceChars",
-                        "pr_noun[ID]"               = "pr_noun",
-                        "meanWordChars[ID]"         = "meanWordChars"))
 ```
-
 :::
 
 ## Validation: Comparing to FRE {.smaller}
@@ -486,11 +430,11 @@ ggplot(data.frame(FRE = FRE, rslambda = rescaled_lambdas), aes(x = FRE, y = rsla
 
 ## Autopsy/Differences {.smaller}
 
-- Able to replicate feature selection results, model results, and key plots
+-   Able to replicate feature selection results, model results, and key plots
 
-- Authors wrote `sophistication` package and replication materials rely heavily on this package; had some initial start-up issues because this package is not actively maintained on GitHub
+-   Authors wrote `sophistication` package and replication materials rely heavily on this package; had some initial start-up issues because this package is not actively maintained on GitHub
 
-- One package authors use is no longer maintained on CRAN
+-   One package authors use is no longer maintained on CRAN
 
 # Extension
 
@@ -498,24 +442,24 @@ ggplot(data.frame(FRE = FRE, rslambda = rescaled_lambdas), aes(x = FRE, y = rsla
 
 **Code updates:**
 
-- Modernized some of the approaches, particularly with data wrangling, to use more of the `tidyverse`
+-   Modernized some of the approaches, particularly with data wrangling, to use more of the `tidyverse`
 
-- Added data checks and amplified comments to add additional clarity
+-   Added data checks and amplified comments to add additional clarity
 
 **Substantive proposals:**
 
-- Improved model testing (model was trained on all coder data)
+-   Improved model testing (model was trained on all coder data)
 
-- Improved model validation beyond comparing against FRE score
+-   Improved model validation beyond comparing against FRE score
 
-- Run model on different political text (e.g., campaign speeches)
+-   Run model on different political text (e.g., campaign speeches)
 
-- Could consider other machine learning approaches besides random forest for feature selection
+-   Could consider other machine learning approaches besides random forest for feature selection
 
-- With more resources (would require hiring coders!) change outcome variable in Bradley-Terry model to different measure of interest (e.g., tone)
+-   With more resources (would require hiring coders!) change outcome variable in Bradley-Terry model to different measure of interest (e.g., tone)
 
 ## References {.smaller}
 
-Benoit, Kenneth, Kevin Munger, and Arthur Spirling. 2019. "Measuring and Explaining Political Sophistication through Textual Complexity." _American Journal of Political Science_ 63 (2): 491–508.doi: 10.1111/ajps.12423
+Benoit, Kenneth, Kevin Munger, and Arthur Spirling. 2019. "Measuring and Explaining Political Sophistication through Textual Complexity." *American Journal of Political Science* 63 (2): 491--508.doi: 10.1111/ajps.12423
 
-Benoit, Kenneth, 2019, "Replication Data for: Measuring and Explaining Political Sophistication Through Textual Complexity", https://doi.org/10.7910/DVN/9SF3TI, Harvard Dataverse, V1, UNF:6:3lWCX52gHXjVfaeDpmEBPQ== [fileUNF]
+Benoit, Kenneth, 2019, "Replication Data for: Measuring and Explaining Political Sophistication Through Textual Complexity", https://doi.org/10.7910/DVN/9SF3TI, Harvard Dataverse, V1, UNF:6:3lWCX52gHXjVfaeDpmEBPQ== \[fileUNF\]
