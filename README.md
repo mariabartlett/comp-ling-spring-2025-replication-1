@@ -68,7 +68,7 @@ Benoit, Munger, and Spirling (2019) have two main goals in their paper:
 			<td>PNG file with list of covariates screen-captured from Benoit et al., 2019 original paper (called in <tt>Bartlett-Shi-replication-1-presentation.qmd</tt>)</td>
 		</tr>
   		<tr>
-        		<td rowspan="2"><tt>05_Paper</tt></td>
+        		<td rowspan="2"><tt>05_FinalReport</tt></td>
 			<td rowspan="2">Includes final paper materials</td>
 			<td><tt>Bartlett-Shi-replication-1-paper.rmd</tt></td>
 			<td>RMD script to produce <tt>Bartlett-Shi-replication-1-paper.pdf</tt></td>
@@ -83,7 +83,7 @@ Benoit, Munger, and Spirling (2019) have two main goals in their paper:
 
 ## Code Guidance
 
-All file path references in the QMD and RMD scripts in this repository assume that the user has cloned this repo and thus is using our same folder structure. The file path references also assumes that the user has downloaded the 33 replication files available on the Harvard Dataverse and unpacked the files directly into `02_DataverseMaterials/dataverse_files`. 
+All file path references in the QMD and RMD scripts in this repository assume that the user has cloned this repo and thus is using our same folder structure. The file path references also assume that the user has downloaded the 33 replication files available on the Harvard Dataverse and unpacked the files directly into `02_DataverseMaterials/dataverse_files`. 
 
 ## Authors
 
