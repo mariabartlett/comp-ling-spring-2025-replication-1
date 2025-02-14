@@ -83,7 +83,7 @@ Benoit, Munger, and Spirling (2019) have two main goals in their paper:
 
 ## Code Guidance
 
-All file path references in the QMD and RMD scripts in this repository assume that the user has cloned this repo and thus is using our same folder structure. The file path references also assumes that the user has downloaded the 33 replication files available on the Harvard Dataverse and unpacked the files directly into `02_DataverseMaterials/dataverse_files`. 
+All file path references in the QMD and RMD scripts in this repository assume that the user has cloned this repo and thus is using our same folder structure. The file path references also assume that the user has downloaded the 33 replication files available on the Harvard Dataverse and unpacked the files directly into `02_DataverseMaterials/dataverse_files`. 
 
 ## Authors
 
