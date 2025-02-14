@@ -1,5 +1,5 @@
 ---
-title: "Replication Code for: Measuring and Explaining Political Sophistication through Textual Complexity"
+title: "Replication Code: A Replication of _Measuring and Explaining Political Sophistication through Textual Complexity_ (Benoit et al., 2019)"
 subtitle: "PPOL 6801: Text as Data: Computational Linguistics"
 author: "Wendy Shi & Maria Bartlett"
 date: "`r Sys.Date()`"
