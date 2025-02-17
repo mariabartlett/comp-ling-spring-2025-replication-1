@@ -66,7 +66,7 @@ As directly quoted from `Codebook.pdf` in Benoit, Munger, and Spirling's replica
 
 "These are the coded snippet comparisons that were downloaded from Crowdflower after the crowd-sourced job was completed."
 
-Key variables (definitions quoted directly from `Codebook.pdf`): 
+Key variables (definitions quoted directly from `Codebook.pdf`):
 
 -   `docID1`: "The document ID for the text from which first snippet was taken, e.g. "Bush-2005""
 
@@ -96,6 +96,10 @@ Key variables (definitions quoted directly from `Codebook.pdf`):
 #| warning: false
 #| output: asis
 #| code-fold: false
+
+root       <- file.path(getwd() %>% dirname())
+author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
+
 
 # load human-coded data of SOTU passages from CrowdFlower
 allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), stringsAsFactors = FALSE),
@@ -264,7 +268,7 @@ load(file.path(author_rep,"BT_unstructured_brT_abilities.rda"))
 load(file.path(author_rep,"BT_unstructured_brF_abilities.rda"))
 
 # fit unstructured model with bias reduction (br=T) [not re-running because of runtime; loading directly from replication package]
-# BT1 <-
+#BT1 <-
 #     BTm(player1 = easier, 
 #         player2 = harder, 
 #         br = TRUE, 
@@ -274,7 +278,7 @@ load(file.path(author_rep,"BT_unstructured_brF_abilities.rda"))
 BT1 <- BT_unstruc_brT
 
 # fit unstructured model without bias reduction (br=F) [not re-running because of run time; loading directly from replication package]
-# BT2 <- 
+#BT2 <- 
 #     BTm(player1 = easier, 
 #         player2 = harder, 
 #         br = FALSE, 
@@ -337,7 +341,7 @@ as.data.frame(import_bias_reduced) %>%
 
 ```
 
-### Step 5. Fit 4 main structured Bradley-Terry models 
+### Step 5. Fit 4 main structured Bradley-Terry models
 
 ```{r}
 #| warning: false
@@ -345,7 +349,7 @@ as.data.frame(import_bias_reduced) %>%
 #| code-fold: false
 
 # load respective author workspace
-load(file.path(author_rep,"job999866covars_chameleons.rda"))
+#load(file.path(author_rep,"job999866covars_chameleons.rda"))
 
 # Bradley-Terry 1: control only for baseline FRE score
 BT_basic_Flesch <- BTm(player1 = easier, player2 = harder,
@@ -375,7 +379,7 @@ model_results <- list(BT_basic_Flesch = BT_basic_Flesch,
 
 ```
 
-### Step 6. Create model results table 
+### Step 6. Create model results table
 
 Corresponds to **Table 2** in paper.
 
@@ -443,5 +447,3 @@ ggplot(data.frame(FRE = FRE, rslambda = rescaled_lambdas), aes(x = FRE, y = rsla
     theme_classic()
 
 ```
-
-
