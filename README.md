@@ -87,10 +87,10 @@ All file path references in the QMD and RMD scripts in this repository assume th
 
 The four replicaion files need to be downloaded are:
 
-1. CF_output_f952737.csv (The Crowdflower result file 1)
-2. CF_output_f999866.csv (The Crowdflower result file 2)
-3. BT_unstructured_brF_abilities.rda (The unstructured BT model result with 44 covariates, setting bias reduction equals to false, not running the model in R due to long run time)
-4. BT_unstructured_brT_abilities.rda (The unstructured BT model result with 44 covariates, setting bias reduction equals to true)
+1. **CF_output_f952737.csv** (The Crowdflower result file 1)
+2. **CF_output_f999866.csv** (The Crowdflower result file 2)
+3. **BT_unstructured_brF_abilities.rda** (The unstructured BT model result with 44 covariates, setting bias reduction equals to false, not running the model in R due to long run time)
+4. **BT_unstructured_brT_abilities.rda** (The unstructured BT model result with 44 covariates, setting bias reduction equals to true)
 
 ## Authors
 
