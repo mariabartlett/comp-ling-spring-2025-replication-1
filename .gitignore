@@ -1,0 +1,12 @@
+*
+!.gitignore
+!.rmd
+!.qmd
+!.r
+!.ipynb
+!.py
+!.html
+!.pdf
+!.txt
+
+!*/
