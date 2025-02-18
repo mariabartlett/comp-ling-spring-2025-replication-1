@@ -397,7 +397,7 @@ as.data.frame(import_non_bias_reduced) %>%
   kable_styling(latex_options = c("repeat_header","scale_down","HOLD_position"), font_size = 12) 
 
 # display feature importance plot
-varImpPlot(mod_non_bias_reduced, main = "Bias Reduced", pch = 16)
+varImpPlot(mod_non_bias_reduced, main = "Not bias Reduced", pch = 16)
 
 ```
 
