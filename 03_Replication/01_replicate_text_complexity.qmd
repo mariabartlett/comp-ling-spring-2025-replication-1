@@ -68,7 +68,7 @@ As directly quoted from `Codebook.pdf` in Benoit, Munger, and Spirling's replica
 
 Key variables (definitions quoted directly from `Codebook.pdf`):
 
--   `docID1`: "The document ID for the text from which first snippet was taken, e.g. "Bush-2005""
+-   `docID1`: "The document ID for the text from which first snippet was taken, e.g."Bush-2005""
 
 -   `snippetID1`: "A unique numeric snippet identifier for snippet 1"
 
@@ -76,17 +76,17 @@ Key variables (definitions quoted directly from `Codebook.pdf`):
 
 -   same `docID2`,`snippedID2`, `text2` for snippet 2
 
--   `X_golden`: "a logical value (true or false) indicating whether the snippet pair was a "gold" question for which we supplied an answer"
+-   `X_golden`: "a logical value (true or false) indicating whether the snippet pair was a"gold" question for which we supplied an answer"
 
--   `screener`: "a logical value TRUE indicating whether the question was a "screener" (a special gold question with embedded instructions to the coder as to how to answer the task) or blank if the question was not a screener."
+-   `screener`: "a logical value TRUE indicating whether the question was a"screener" (a special gold question with embedded instructions to the coder as to how to answer the task) or blank if the question was not a screener."
 
 -   `X_id`: "a unique numeric identifier for the answer, assigned by Crowdflower (e.g. 2025513496)"
 
 -   `X_missed`: "a Boolean (true or blank) indicating whether the crowd worker missed a gold question"
 
--   `X_tainted`: "a Boolean (true or false) indicating whether the answer was "tainted" because the worker missed too many screening questions. Because we excluded tainted answers, in our data, all values of this variable are false."
+-   `X_tainted`: "a Boolean (true or false) indicating whether the answer was"tainted" because the worker missed too many screening questions. Because we excluded tainted answers, in our data, all values of this variable are false."
 
--   `X_trust`: "the "trust" score for the respondent, as computed by Crowdflower. Our minimum was 0.60 and our mean answer had a trust value of around 0.86."
+-   `X_trust`: "the"trust" score for the respondent, as computed by Crowdflower. Our minimum was 0.60 and our mean answer had a trust value of around 0.86."
 
 -   `X_worker_id`: "a unique numeric identifier for the worker, e.g. 34616922"
 
@@ -96,10 +96,6 @@ Key variables (definitions quoted directly from `Codebook.pdf`):
 #| warning: false
 #| output: asis
 #| code-fold: false
-
-root       <- file.path(getwd() %>% dirname())
-author_rep <- file.path(root,"02_DataverseMaterials","dataverse_files")
-
 
 # load human-coded data of SOTU passages from CrowdFlower
 allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), stringsAsFactors = FALSE),
@@ -263,12 +259,12 @@ covars_data %>%
 # covariate data from above
 dat <- job999866covars_chameleons
 
-# load respective author workspaces
+# load respective author workspaces [only necessary if NOT re-running lines 266-273]
 load(file.path(author_rep,"BT_unstructured_brT_abilities.rda"))
 load(file.path(author_rep,"BT_unstructured_brF_abilities.rda"))
 
-# fit unstructured model with bias reduction (br=T) [not re-running because of runtime; loading directly from replication package]
-#BT1 <-
+# fit unstructured model with bias reduction (br=T) [not re-running because of runtime]
+# BT1 <-
 #     BTm(player1 = easier, 
 #         player2 = harder, 
 #         br = TRUE, 
@@ -277,8 +273,8 @@ load(file.path(author_rep,"BT_unstructured_brF_abilities.rda"))
 
 BT1 <- BT_unstruc_brT
 
-# fit unstructured model without bias reduction (br=F) [not re-running because of run time; loading directly from replication package]
-#BT2 <- 
+# fit unstructured model without bias reduction (br=F) [not re-running because of run time]
+# BT2 <- 
 #     BTm(player1 = easier, 
 #         player2 = harder, 
 #         br = FALSE, 
@@ -287,16 +283,11 @@ BT1 <- BT_unstruc_brT
 
 BT2 <- BT_unstruc_brF
 
-# examine first 10 rows of baseline "ability" (easiness) as estimated from Bradley-Terry model
-BTabilities(BT1) %>%
-  head(10) %>%
-  datatable()
-
 ```
 
 ### Step 4. Run Random Forest model for covariate feature selection
 
-BT Model with reduced random forest features (with bias reduction).
+#### Step 4.1: With bias reduction
 
 ```{r}
 #| warning: false
@@ -338,6 +329,50 @@ as.data.frame(import_bias_reduced) %>%
       align = "l",
       booktabs = T) %>%
   kable_styling(latex_options = c("repeat_header","scale_down","HOLD_position"), font_size = 12) 
+
+# display feature importance plot
+varImpPlot(mod_bias_reduced, main = "Bias Reduced", pch = 16)
+
+```
+
+#### Step 4.2: Without bias reduction
+
+```{r}
+#| warning: false
+#| output: asis
+#| code-fold: false
+
+# Y target feature: text easiness ("ability")
+y2 <- BTabilities(BT2)[, "ability"]
+
+# remove NAs
+yy2 <- y2[!is.na(y2)]
+
+# return row number, match left to right 
+mm <- match(names(yy2), rownames(dat$predictors))
+
+# X features for random forest
+# instead of having a selected features, we use all features
+X2 <- dat$predictors[mm, terms]
+
+# run random forest for non-bias-reduced model
+mod_non_bias_reduced <- randomForest(X2, y = yy2, ntree = 1000)
+
+# display feature importance in descending order on node purity
+import_non_bias_reduced = round(importance(mod_non_bias_reduced), 2)
+
+as.data.frame(import_non_bias_reduced) %>%
+  rownames_to_column() %>%
+  arrange(-IncNodePurity) %>%
+  rename(Feature       = rowname,
+         `Node Purity` = IncNodePurity) %>%
+  kbl(full_width = T, 
+      align = "l",
+      booktabs = T) %>%
+  kable_styling(latex_options = c("repeat_header","scale_down","HOLD_position"), font_size = 12) 
+
+# display feature importance plot
+varImpPlot(mod_non_bias_reduced, main = "Bias Reduced", pch = 16)
 
 ```
 
