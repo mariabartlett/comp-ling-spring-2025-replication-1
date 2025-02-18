@@ -97,6 +97,8 @@ Key variables (definitions quoted directly from `Codebook.pdf`):
 #| output: asis
 #| code-fold: false
 
+# NOTE: based on original code; added tidyverse + verification updates
+# ----
 # load human-coded data of SOTU passages from CrowdFlower
 allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), stringsAsFactors = FALSE),
                       read.csv(file.path(author_rep,"CF_output_f952737.csv"), stringsAsFactors = FALSE)) %>%
@@ -107,6 +109,8 @@ allsentences <- rbind(read.csv(file.path(author_rep,"CF_output_f999866.csv"), st
   # confirm all tainted responses have been removed, per codebook
   verify(X_tainted == "false")
 
+# NOTE: new to MB + WS replication
+# ---
 # output a few examples of text comparisons
 allsentences %>%
   select(X_id,X_worker_id,snippetid1,docid1,text1,snippetid2,docid2,text2,easier) %>%
@@ -133,6 +137,8 @@ Authors assume a complex text uses:
 #| output: asis
 #| code-fold: false
 
+# NOTE: from original code
+# ---
 # add covariates to prepare data for BT Model
 job999866covars_chameleons <-
     bt_input_make(allsentences, 
@@ -152,6 +158,8 @@ job999866covars_chameleons <-
                   # normalize covariates
                   normalize = TRUE)
 
+# NOTE: new to MB + WS replication
+# ---
 # view 'easier' data: at the pairwise-comparison level, contains an ID with the unique snippet ID of the 
 # ID that won the comparison
 job999866covars_chameleons$easier %>%
@@ -159,6 +167,8 @@ job999866covars_chameleons$easier %>%
   head() %>%
   datatable()
 
+# NOTE: new to MB + WS replication
+# ---
 # view 'harder' data: at the pairwise-comparison level, contains an ID with the unique snippet ID of the 
 # ID that lost the comparison
 job999866covars_chameleons$harder %>%
@@ -166,6 +176,8 @@ job999866covars_chameleons$harder %>%
   head() %>%
   datatable()
 
+# NOTE: new to MB + WS replication
+# ---
 # view 'predictors' data: data with predictors associated with each distinct snippet, where the id of the row.name
 # corresponds with the ID in the 'easier' and 'harder' dataframes
 job999866covars_chameleons$predictors %>%
@@ -182,6 +194,9 @@ job999866covars_chameleons$predictors %>%
 #| warning: false
 #| output: asis
 #| code-fold: false
+
+# NOTE: Section new to MB + WS replication.
+# ---
 
 # extract dataframe with covariates
 pred_data <- job999866covars_chameleons$predictors %>%
@@ -256,6 +271,8 @@ covars_data %>%
 #| output: asis
 #| code-fold: false
 
+# NOTE: section based closely on original code
+# ---
 # covariate data from above
 dat <- job999866covars_chameleons
 
@@ -293,7 +310,9 @@ BT2 <- BT_unstruc_brF
 #| warning: false
 #| output: asis
 #| code-fold: false
-
+ 
+# NOTE: section based very closely on original code
+# ---
 # Y target feature: text easiness ("ability")
 # extract ability column from bias-reduced BT model
 y  <- BTabilities(BT1)[, "ability"] 
@@ -320,6 +339,8 @@ mod_bias_reduced <- randomForest(X, y = yy, ntree = 1000)
 # display feature importance in descending order on node purity
 import_bias_reduced = round(importance(mod_bias_reduced), 2)
 
+# NOTE: new to MB + WS replication
+# ---
 as.data.frame(import_bias_reduced) %>%
   rownames_to_column() %>%
   arrange(-IncNodePurity) %>%
@@ -342,6 +363,8 @@ varImpPlot(mod_bias_reduced, main = "Bias Reduced", pch = 16)
 #| output: asis
 #| code-fold: false
 
+# NOTE: section based very closely on original code
+# ---
 # Y target feature: text easiness ("ability")
 y2 <- BTabilities(BT2)[, "ability"]
 
@@ -361,6 +384,8 @@ mod_non_bias_reduced <- randomForest(X2, y = yy2, ntree = 1000)
 # display feature importance in descending order on node purity
 import_non_bias_reduced = round(importance(mod_non_bias_reduced), 2)
 
+# NOTE: new to MB + WS replication
+# ---
 as.data.frame(import_non_bias_reduced) %>%
   rownames_to_column() %>%
   arrange(-IncNodePurity) %>%
@@ -383,8 +408,8 @@ varImpPlot(mod_non_bias_reduced, main = "Bias Reduced", pch = 16)
 #| output: asis
 #| code-fold: false
 
-# load respective author workspace
-#load(file.path(author_rep,"job999866covars_chameleons.rda"))
+# NOTE: section based very closely on original code
+# ---
 
 # Bradley-Terry 1: control only for baseline FRE score
 BT_basic_Flesch <- BTm(player1 = easier, player2 = harder,
@@ -423,6 +448,9 @@ Corresponds to **Table 2** in paper.
 #| output: asis
 #| code-fold: false
 
+# NOTE: section remodeled in MB + WS replication to account for retirement of apsrtable package
+# ---
+
 # put models in a list
 models <- list("FRE Baseline"   = BT_basic_Flesch,
                "FRE Reweight"   = BT_optimal_Flesch,
@@ -455,6 +483,9 @@ Corresponds to **Figure 1** in paper.
 #| warning: false
 #| output: asis
 #| code-fold: false
+
+# NOTE: section based entirely on original code
+# ---
 
 # get FRE scores for the snippets
 dat <- job999866covars_chameleons
